@@ -1,0 +1,254 @@
+\chapter{Thực nghiệm và Kết quả }
+
+\section{Thiết lập môi trường}
+
+Quá trình thực nghiệm được thiết kế nhằm đảm bảo tính tái lập (reproducibility) và khai thác tối đa khả năng xử lý của GPU trong quá trình fine-tuning các mô hình ngôn ngữ lớn (LLM).
+
+\textbf{Môi trường phần cứng và phần mềm}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{3cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Chi tiết} & \textbf{Ghi chú} \\
+\hline
+Nền tảng (Platform) & Google Colab & Môi trường đám mây tiêu chuẩn, thuận tiện cho chia sẻ và tái lập thí nghiệm \\
+\hline
+Thiết bị tính toán (Compute) & Tesla T4 GPU & Đảm bảo tốc độ fine-tuning cao, hỗ trợ Mixed Precision \\
+\hline
+Framework ML & PyTorch & Framework lõi cho huấn luyện mô hình \\
+\hline
+Thư viện chính & Hugging Face Transformers, Datasets, Accelerate & Cung cấp API mô hình, tiện ích Trainer và quản lý dataset \\
+\hline
+\end{tabular}
+\caption{Môi trường phần cứng và phần mềm cho các thí nghiệm}
+\end{table}
+
+\textbf{Cấu hình mô hình và tiền xử lý}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Chi tiết} & \textbf{Ghi chú} \\
+\hline
+Mô hình cơ sở & RoBERTa-Twitter (cardiffnlp/twitter-roberta-base-sentiment-latest) & Tối ưu cho văn bản mạng xã hội \\
+\hline
+Max Token Length & 512 tokens & Giới hạn tối đa tokenization, giữ đầy đủ thông tin cho bình luận dài \\
+\hline
+\end{tabular}
+\caption{Cấu hình mô hình và tiền xử lý}
+\end{table}
+
+
+\textbf{Cấu hình đặc thù Stage 1 – Weak Supervision}
+
+Stage 1 được thiết kế nhằm xây dựng nhãn yếu và khởi động mô hình (bootstrap):
+\begin{itemize}
+    \item \textbf{Dữ liệu:} Thu thập từ 6 subreddit lớn về gaming trên Reddit.
+    \item \textbf{Chiến lược nhãn:} Áp dụng ``8-Signal Strategy'' (Metadata, Content, Context) kết hợp cơ chế Weighted Voting để tạo 3,003 mẫu nhãn yếu với độ tin cậy $\ge 0.6$.
+    \item \textbf{Huấn luyện:} Mô hình fine-tune trên tập Reddit đã được cân bằng từ nhãn yếu, gồm 2,102 mẫu.
+\end{itemize}
+
+\textbf{Cấu hình Supervised Learning (Stage 2 \& 3)}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{4cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{Tham số} & \textbf{Giá trị sử dụng} & \textbf{Giai đoạn áp dụng} \\
+\hline
+Batch Size (Train) & 16 (Effective: 32) & per\_device\_train\_batch\_size = 16 + gradient\_accumulation\_steps = 2 (Stage 3a) \\
+\hline
+Learning Rate (LR) & $1\times10^{-5} - 2\times10^{-5}$ & Phạm vi LR tối ưu cho fine-tuning LLM \\
+\hline
+Kỹ thuật mất cân bằng & Focal Loss $(\alpha=0.25, \gamma=2.0)$ & Stage 3a: Giảm trọng số các mẫu khó và tập trung vào lớp thiểu số \\
+\hline
+Kỹ thuật mất cân bằng & Class Weighting (Log-scaled) & Stage 3b: Tăng trọng số cho lớp thiểu số dựa trên tần suất nghịch đảo \\
+\hline
+\end{tabular}
+\caption{Cấu hình Supervised Learning Stage 2 \& 3}
+\end{table}
+
+\section{Phân tích từng giai đoạn thực nghiệm}
+
+\textbf{Stage 1: Weak Supervision (Reddit Gaming)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/4_1.png} % thay bằng tên file ảnh
+    \caption{Confusion Matrix Stage 1 - Weak Supervision (Reddit Gaming)}
+\end{figure}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{4cm}|p{4cm}|p{4cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Kết quả trên tập Reddit (Weak Test)} & \textbf{Kết quả trên tập Kaggle (Cross-Eval)} \\
+\hline
+Accuracy & 86.70\% \text{} & 47.88\% \text{} \\
+\hline
+F1-Weighted & 86.64\% \text{} & 44.01\% \text{} \\
+\hline
+Negative Recall & 87.61\% \text{} & 3.82\% \text{} \\
+\hline
+Thời gian Train & 19.16 phút \text{} & 0.00 phút (Model có sẵn) \text{} \\
+\hline
+\end{tabular}
+\caption{So sánh Hiệu năng Stage 1 trên Tập Nội bộ và Cross-Evaluation}
+\end{table}
+
+\textbf{Phân tích:}
+\begin{itemize}
+    \item \textbf{Hiệu quả nội bộ:} Trên tập Reddit, Negative Recall 87.61\%, Positive Recall 91.72\% và Neutral Recall 81.07\%. Điều này chứng tỏ 8-Signal Weak Supervision tạo nhãn nhiễu chất lượng cao, giúp mô hình học tốt trên miền dữ liệu tương tự.
+    \item \textbf{Khoảng cách tổng quát hóa:} Khi đánh giá trên tập Kaggle chuẩn, Accuracy giảm còn 47.88\% và Negative Recall chỉ 3.82\%, phản ánh Generalization Gap, cho thấy dữ liệu nhãn yếu từ Reddit không tổng quát hóa tốt sang dữ liệu chuẩn.
+\end{itemize}
+
+\textbf{Stage 2: Supervised Learning (Balanced – Undersampling)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/4_2.png} % thay bằng tên file ảnh
+    \caption{Confusion Matrix Stage 2 - Supervised Learning (Balanced – Undersampling)}
+    \label{fig:ten_label}
+\end{figure}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Kaggle Test Set} & \textbf{Chi tiết Loss Function} \\
+\hline
+Accuracy & 79.02\% & Standard CrossEntropy \\
+\hline
+F1-Weighted & 79.32\% & Final Loss: 0.5560 \\
+\hline
+Negative Recall & 79\% & Training Time: 52.34 phút \\
+\hline
+\end{tabular}
+\caption{Kết quả Stage 2 trên tập Kaggle}
+\end{table}
+
+\textbf{Phân tích:}
+
+\begin{itemize}
+    \item Tác động của Undersampling: Việc loại bỏ khoảng 11.000 mẫu lớp đa số giúp mô hình tập trung vào lớp thiểu số, đạt Negative Recall cao nhất (79\%).
+    \item Đánh đổi: Mặc dù tăng khả năng nhận diện lớp thiểu số, hiệu năng tổng thể giảm so với Stage 3 (Accuracy 79.02\% so với >82\%), và Neutral Recall cũng giảm xuống 72\%. Final Loss 0.5560 phản ánh mô hình học ổn định, thấp hơn hẳn mức ngẫu nhiên ($\sim 1.098$).
+\end{itemize}
+
+\textbf{Stage 3: Supervised Learning (Imbalanced – Focal Loss / Class Weighting)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Images/4_3.png} % thay bằng tên file ảnh
+    \caption{Confusion Matrix Stage 3: Supervised Learning (Imbalanced – Focal Loss)}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Images/4_4.png} % thay bằng tên file ảnh
+    \caption{Confusion Matrix Stage 3: Supervised Learning (Imbalanced – Class Weighting)}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{5cm}|c|c|}
+\hline
+\textbf{Tiêu chí} & \textbf{Stage 3a (Focal Loss)} & \textbf{Stage 3b (Class Weighting)} \\
+\hline
+Accuracy & 82.35\% & 82.22\% \\
+F1-Weighted & 82.29\% & 82.22\% \\
+Negative Recall & 71.74\% & 73\% \\
+Final Loss & 0.0416 & 0.4895 \\
+Thời gian Train & 35.86 phút & 86.17 phút \\
+\hline
+\end{tabular}}
+\caption{Kết quả Stage 3: Focal Loss và Class Weighting}
+\end{table}
+
+\textbf{Phân tích:}
+\begin{itemize}
+    \item Hiệu quả tổng thể: Cả hai phương pháp Stage 3 đều tận dụng toàn bộ 15.274 mẫu dữ liệu, giúp đạt Accuracy >82\% và F1-weighted tương đương, cao hơn Stage 2 khoảng 3\%.
+    \item Đặc trưng Focal Loss (Stage 3a): Loss giảm xuống 0.0416, cho thấy mô hình tập trung hiệu quả vào các mẫu khó (hard examples). Thời gian huấn luyện ngắn hơn gần 2.5 lần so với Class Weighting, phản ánh ưu điểm về hiệu suất.
+    \item Đặc trưng Class Weighting (Stage 3b): Tăng Negative Recall lên 73\%, nhưng mất nhiều thời gian huấn luyện hơn (86.17 phút), cho thấy trade-off giữa tốc độ và cân bằng lớp.
+\end{itemize}
+
+\section{Tổng hợp và So sánh Hiệu năng Đa chiều}
+
+\subsection{Kết quả định lượng tổng hợp}
+
+Kết quả từ bốn giai đoạn thử nghiệm được tổng hợp và sắp xếp theo độ chính xác giảm dần.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/4_5.png} % thay bằng tên file ảnh
+    \caption{Accuracy Comparison}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/4_6.png} % thay bằng tên file ảnh
+    \caption{F1-Score Comparison}
+\end{figure}
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{4cm}|c|c|c|p{3cm}|c|}
+\hline
+\textbf{Phương pháp} & \textbf{Accuracy (\%)} & \textbf{F1-Score (Weighted \%)} & \textbf{Thời gian Train (phút)} & \textbf{Test Set} & \textbf{Manual Labels} \\
+\hline
+Stage 1 (Weak) & 86.70 & 86.64 & 19.16 & Reddit (Weak) & No \\
+\hline
+Stage 3a (Focal Loss) & 82.35 & 82.29 & 35.86 & Kaggle (Human) & Yes \\
+\hline
+Stage 3b (Class Weighting) & 82.22 & 82.22 & 86.17 & Kaggle (Human) & Yes \\
+\hline
+Stage 2 (Balanced) & 79.02 & 79.32 & 52.34 & Kaggle (Human) & Yes \\
+\hline
+Stage 1 (Cross-Eval) & 47.88 & 44.01 & 0.00 & Kaggle (Human) & No (Weak) \\
+\hline
+\end{tabular}}
+\caption{So sánh Hiệu năng tổng hợp các chiến lược huấn luyện}
+\end{table}
+
+Tổng hợp cho thấy hiệu năng các chiến lược phân tách thành hai nhóm rõ rệt. Nhóm Weak Supervision (Stage 1) đạt hiệu năng nội bộ cao nhất (86.70\% Accuracy) và có tốc độ nhanh nhất (19.16 phút). Tuy nhiên, rủi ro tổng quát hóa là rất lớn, được chứng minh bằng sự sụt giảm $\approx 38.82\%$ Accuracy khi kiểm tra trên dữ liệu chuẩn Kaggle (chỉ còn 47.88\%). Ngược lại, Nhóm Supervised (Stage 2 \& 3) có hiệu năng tổng thể ổn định hơn. Các phương pháp Algorithm-Level (Stage 3a/3b) tận dụng toàn bộ dữ liệu gốc (15,274 mẫu) đã đạt Accuracy cao nhất (trên 82\%), vượt trội so với Undersampling (Stage 2) (79.02\% Accuracy) do việc giảm mẫu làm giảm khả năng học của mô hình. Trong nhóm Supervised, Focal Loss (Stage 3a) nổi bật về hiệu suất khi đạt Accuracy 82.35\% với thời gian huấn luyện nhanh nhất (35.86 phút), làm nổi bật ưu thế về hiệu suất tính toán khi xử lý dữ liệu mất cân bằng.
+
+\subsection{Phân tích hiệu suất lớp}
+
+Phân tích chi tiết hiệu quả phân loại trên lớp thiểu số (Negative) được thể hiện trong bảng \ref{tab:negative-recall}.
+
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Phương pháp} & \textbf{Negative Recall (\%)} & \textbf{Neutral Recall (\%)} & \textbf{Positive Recall (\%)} \\
+\hline
+Stage 1 (Weak) & 87.61 & 81.07 & 91.72 \\
+Stage 3a (Focal Loss) & 71.74 & 78.79 & 89.64 \\
+Stage 3b (Class Weighting) & 73 & 78 & 89 \\
+Stage 2 (Balanced) & 79 & 72 & 85 \\
+\hline
+\end{tabular}}
+\caption{Tỷ lệ phân loại lớp thiểu số (Negative Recall)}
+\label{tab:negative-recall}
+\end{table}
+
+\textbf{Nhận xét:}
+\begin{itemize}
+    \item Stage 2 (Balanced) đạt Recall cao nhất trên lớp Negative (79\%), phản ánh đặc trưng của phương pháp Undersampling: loại bỏ một phần mẫu lớp đa số khiến mô hình phải học sâu hơn từ các mẫu thiểu số, giảm bỏ sót Negative.
+    \item Stage 2 cải thiện Recall lớp Negative (79\%), nhưng đi kèm với giảm Accuracy tổng thể (79.02\% vs. 82.35\% của Stage 3) và Precision. Điều này cho thấy cần cân nhắc giữa khả năng nhận diện lớp thiểu số và hiệu năng tổng thể.
+\end{itemize}
+
+\subsection{Phân tích đa chiều}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/4_8.png} % thay bằng tên file ảnh
+    \caption{Biểu đồ Radar Chart }
+\end{figure}
+Biểu đồ Radar Chart được sử dụng để trực quan hóa sự đánh đổi giữa các yếu tố quan trọng trong quá trình huấn luyện và đánh giá mô hình. Các tiêu chí chính bao gồm:
+
+\begin{itemize}
+    \item \textbf{Accuracy và F1-Score:} Các phương pháp Supervised Stage 3a (Focal Loss) và Stage 3b (Class Weighting) thể hiện hiệu năng tốt nhất trên tập dữ liệu chuẩn, khẳng định chất lượng phân loại cao.
+    \item \textbf{Tận dụng dữ liệu (Data Size):} Stage 3a và 3b khai thác toàn bộ 15,274 mẫu, trong khi Stage 2 chỉ sử dụng 8,222 mẫu, làm hạn chế khả năng học của mô hình và giảm hiệu năng tổng thể.
+    \item \textbf{Tốc độ huấn luyện (Speed – Inverse Time):} Stage 1 trên Reddit Test Set có thời gian nhanh nhất (19.16 phút), trong khi Stage 3a là phương pháp Supervised mất cân bằng nhanh nhất (35.86 phút), còn Stage 3b mất nhiều thời gian nhất (86.17 phút) do cơ chế Class Weighting tốn kém hơn.
+\end{itemize}
+
+$\Rightarrow$ Stage 3a (Focal Loss) được đánh giá là chiến lược tối ưu cho triển khai thực tế (Production), nhờ khả năng đạt Accuracy cao nhất (82.35\%) trong các phương pháp sử dụng nhãn chuẩn, đồng thời tiết kiệm thời gian huấn luyện hơn so với Class Weighting. Biểu đồ Radar Chart minh họa rõ ràng lợi ích đồng thời của việc sử dụng toàn bộ dữ liệu và tốc độ huấn luyện hợp lý.
+

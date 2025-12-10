@@ -1,0 +1,164 @@
+\chapter{Đánh giá và Thảo luận}
+
+Chương này không chỉ trình bày kết quả mà còn phân tích cơ chế kỹ thuật tạo ra các hiện tượng quan sát được, từ đó làm rõ ưu – nhược điểm – trade-off của từng chiến lược huấn luyện trong pipeline. Mục tiêu là giải thích hành vi của mô hình dựa trên dữ liệu và phương pháp học, thay vì chỉ báo cáo số liệu.
+
+\section{Giới hạn và Rủi ro của Weak Supervision (Stage 1)}
+
+Stage 1 chứng minh rằng mô hình chịu ảnh hưởng mạnh bởi \textbf{Domain Shift} và \textbf{Heuristic Overfitting} khi học từ tập dữ liệu Reddit gán nhãn tự động.  
+
+Kết quả định lượng quan trọng:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{5cm}|p{8cm}|}
+\hline
+\textbf{Chỉ số} & \textbf{Stage 1} \\
+\hline
+Accuracy & 47.88\% (giảm $\approx$ 38.82\% từ 86.70\%) \\
+\hline
+Negative Recall & 3.82\% (giảm từ 87.61\%) \\
+\hline
+Training Loss trung bình & 0.5826 \\
+\hline
+Thời gian huấn luyện & 1149.50s ($\sim$19.16 phút) \\
+\hline
+\end{tabular}
+\caption{Hiệu năng định lượng của Stage 1 (Weak Supervision)}
+\end{table}
+\textbf{Giải thích Training Loss:}  
+Giá trị Training Loss $\approx 0.58$ phản ánh mô hình hội tụ ổn định trên dữ liệu Reddit, mặc dù hiệu năng trên tập dữ liệu chuẩn giảm mạnh. Loss chưa quá cao, cho thấy mô hình vẫn học được các mối tương quan trong dữ liệu nguồn, nhưng các mối quan hệ này không tổng quát sang tập dữ liệu khác, dẫn tới sụt giảm Negative Recall và Accuracy — minh họa điển hình cho \textbf{Domain Shift}.
+
+\textbf{Nguyên nhân sụt giảm hiệu năng:}  
+Mô hình học các mẫu không liên quan đến ngữ nghĩa thực, bao gồm:
+\begin{itemize}
+    \item Cấu trúc comment đặc thù Reddit,
+    \item Token và slang của cộng đồng Gaming/Meme,
+    \item Giọng điệu meme / Internet culture,
+    \item Phân phối từ vựng lệch hẳn so với dữ liệu chuẩn.
+\end{itemize}
+
+Như vậy, Stage 1 không thất bại do thuật toán, mà là do môi trường học không đồng nhất — một minh chứng rõ ràng cho \textbf{Domain Adaptation Failure}.
+
+\textbf{Trade-off của Weak Supervision:}
+
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{7cm}|p{7cm}|}
+\hline
+\textbf{Lợi ích} & \textbf{Rủi ro} \\
+\hline
+Tiết kiệm chi phí: huấn luyện nhanh ($\sim$19.16 phút) & Sai lệch ngữ nghĩa nghiêm trọng \\
+Tạo pseudo-label nhanh ở quy mô lớn & Học nhầm các dấu hiệu ``meme-biased'' \\
+Phù hợp làm pretraining cho các Stage tiếp theo & Không thể triển khai trực tiếp cho môi trường production \\
+\hline
+\end{tabular}}
+\caption{Trade-off của Weak Supervision (Stage 1)}
+\end{table}
+
+\textbf{Nhận xét:}  
+Weak Supervision vẫn hữu ích khi dùng làm pretraining, giúp mô hình nắm được các quy luật tổng quát trong dữ liệu nguồn. Tuy nhiên, tuyệt đối không triển khai trực tiếp, mà cần Denoising và Supervised Fine-tuning để điều chỉnh nhãn yếu và cải thiện khả năng tổng quát hóa trên dữ liệu thật.
+
+\section{Hiệu quả Huấn luyện và Phân tích Chiến lược của Các Stage Supervised}
+
+Các Stage supervised (Stage 2, Stage 3a, Stage 3b) áp dụng những chiến lược khác nhau để xử lý dữ liệu mất cân bằng, từ hy sinh dữ liệu đến tối ưu Loss Function. Những lựa chọn này dẫn đến khác biệt rõ rệt trong hành vi huấn luyện, tốc độ hội tụ, hiệu suất phân loại và khả năng tổng quát của mô hình.
+
+\textbf{Thứ nhất, hạn chế cốt lõi của Data-Level Balancing (Stage 2):}
+
+Stage 2 sử dụng kỹ thuật undersampling, loại bỏ khoảng 11K mẫu lớp đa số để cân bằng dữ liệu. Những đặc điểm quan trọng:
+\begin{itemize}
+    \item \textbf{Lợi ích cục bộ:} Mô hình tập trung vào lớp thiểu số, đạt Negative Recall cao nhất trong nhóm supervised (79\%).
+    \item \textbf{Chi phí về tính toàn vẹn dữ liệu:} Việc giảm mẫu phá vỡ phân phối tự nhiên, làm mất thông tin quan trọng.
+    \item \textbf{Suy giảm tổng thể:} Accuracy toàn Stage 2 thấp nhất (79.02\%).
+    \item \textbf{Mờ decision boundary của lớp Neutral:} Neutral Recall giảm xuống 72\%, vì các mẫu near-boundary với lớp Positive/Negative bị loại bỏ, làm mô hình khó phân biệt chính xác.
+\end{itemize}
+
+\textbf{Kết luận:}  
+Stage 2 cải thiện recall lớp thiểu số nhưng đánh đổi nghiêm trọng về khả năng học tổng quát và chất lượng phân loại các lớp khác.
+
+\textbf{Thứ hai, ưu thế của Algorithm-Level Balancing (Stage 3)}
+
+Stage 3a (Focal Loss) và Stage 3b (Class Weighting) áp dụng triết lý \textit{Data Preservation}, giữ nguyên toàn bộ dữ liệu ($\sim$21,8K mẫu), đồng thời điều chỉnh trọng số hoặc cơ chế loss để xử lý mất cân bằng.
+
+\begin{itemize}
+    \item \textbf{Tận dụng dữ liệu đầy đủ:} Cả Stage 3a và 3b đạt Accuracy cao nhất (82.35\% và 82.22\%).
+    \item \textbf{Khác biệt về tốc độ hội tụ:} Stage 3a hội tụ nhanh nhất (35.86 phút) nhờ cơ chế Focal Loss triệt tiêu gradient từ các mẫu dễ, tập trung cập nhật mẫu khó; Stage 3b chậm nhất (86.17 phút) do gradient dao động mạnh khi phóng đại trọng số lớp thiểu số.
+    \item \textbf{Hành vi gradient và loss:} Focal Loss giảm nhiễu gradient và làm trơn landscape của hàm loss, cho phép mô hình tối ưu ổn định, giữ nguyên cấu trúc dữ liệu và học hiệu quả các mẫu khó mà không overfit.
+\end{itemize}
+
+\textbf{Thứ ba, phân tích Loss Function và Tác động}
+
+\begin{table}[H]
+\centering
+\small % giảm cỡ chữ
+\begin{tabular}{|p{3cm}|>{\centering\arraybackslash}p{3cm}|>{\centering\arraybackslash}p{3cm}|>{\centering\arraybackslash}p{3cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Stage 2 (CE)} & \textbf{Stage 3b (Class Weighting)} & \textbf{Stage 3a (Focal Loss)} \\
+\hline
+Final Loss & 0.5560 & 0.4895 & 0.0416 \\
+Training Time & 52.34 phút & 86.17 phút & 35.86 phút \\
+\hline
+\end{tabular}
+\caption{So sánh Loss và thời gian huấn luyện giữa các Stage}
+\end{table}
+
+
+\begin{itemize}
+    \item \textbf{Cross-Entropy Loss (Stage 2 \& 3b):} Giá trị $\sim 0.5$–0.49 phản ánh mô hình đã hội tụ ổn định, vượt xa mức ngẫu nhiên ($\sim 1.098$), đồng thời duy trì khả năng học các đặc trưng phân biệt giữa các lớp.
+    \item \textbf{Focal Loss (Stage 3a):} Loss cực thấp (0.0416) nhờ cơ chế \textit{focusing factor} $(1-p_t)^\gamma$, triệt tiêu gradient từ các mẫu dễ, tập trung vào các mẫu khó. Giá trị thấp này không phải overfitting mà là dấu hiệu của quá trình tối ưu hiệu quả.
+    \item \textbf{Tốc độ hội tụ liên quan tới Loss:} Gradient dao động mạnh trong Class Weighting làm hội tụ chậm; Focal Loss với gradient tinh gọn dẫn đến tốc độ hội tụ nhanh nhất; CE Loss trung bình cho tốc độ hội tụ trung bình.
+\end{itemize}
+
+\textbf{Thứ tư, trade-off và khả năng tối ưu}
+
+\begin{itemize}
+    \item \textbf{Stage 2 (Undersampling):} Trade-off rõ ràng giữa recall lớp thiểu số và accuracy tổng thể; neutral recall giảm, mất thông tin near-boundary, giảm tính tổng quát.
+    \item \textbf{Stage 3b (Class Weighting):} Giữ dữ liệu đầy đủ, cải thiện recall nhưng gradient dao động mạnh, hội tụ chậm; thích hợp khi cần ưu tiên lớp critical nhưng không quá quan tâm tốc độ.
+    \item \textbf{Stage 3a (Focal Loss):} Cân bằng tối ưu giữa recall, accuracy, tốc độ hội tụ và tổng quát. Tập trung học các mẫu khó mà vẫn giữ cấu trúc phân phối dữ liệu gốc, giảm bias vào lớp đa số, đạt hiệu suất tốt nhất toàn diện.
+\end{itemize}
+
+\textbf{Thứ năm, tác động trên từng lớp dữ liệu}
+
+\begin{itemize}
+    \item \textbf{Lớp Negative (thiểu số, critical):} Stage 2 tối ưu recall (79\%) nhưng trade-off neutral recall; Stage 3b duy trì recall tốt (73\%) nhưng gradient dao động gây cập nhật không ổn định; Stage 3a cân bằng recall và accuracy, học hiệu quả các mẫu khó mà không phá vỡ phân phối gốc.
+    \item \textbf{Lớp Neutral (boundary class):} Stage 2 suy giảm (72\% recall) do mất các mẫu near-boundary; Stage 3a và 3b duy trì cấu trúc dữ liệu, neutral recall cao hơn, decision boundary rõ ràng.
+    \item \textbf{Lớp Positive (đa số):} Stage 2 giảm accuracy vì mất nhiều mẫu; Stage 3a và 3b giữ toàn bộ dữ liệu, duy trì khả năng phân loại Positive chính xác, cải thiện tổng thể accuracy.
+\end{itemize}
+
+\textbf{Thứ sáu, phân tích lỗi và nguyên nhân}
+
+\begin{itemize}
+    \item \textbf{Lỗi ngữ cảnh (Pragmatic Failures):} Xuất hiện ở sarcasm/irony (False Negative) hoặc hài hước/trích dẫn (False Positive); nguyên nhân do RoBERTa-base chưa có khả năng inference ngữ dụng tinh vi.
+    \item \textbf{Lỗi do thay đổi cấu trúc dữ liệu (Stage 2):} Loại bỏ dữ liệu near-boundary phá vỡ distribution, mờ decision boundary, đặc biệt giữa Neutral và Positive.
+    \item \textbf{Lỗi gradient dao động (Stage 3b):} Class Weighting phóng đại gradient lớp thiểu số, gây noisy updates, khó hội tụ ổn định, đôi khi overshoot boundary quan trọng.
+\end{itemize}
+
+\textbf{Kết luận tổng thể}
+
+\begin{itemize}
+    \item \textbf{Stage 2}: Ưu tiên recall lớp thiểu số, đánh đổi accuracy tổng thể và khả năng học tổng quát.
+    \item \textbf{Stage 3b}: Giữ dữ liệu, cải thiện recall nhưng hội tụ chậm do gradient dao động.
+    \item \textbf{Stage 3a (Focal Loss)}: Cân bằng tối ưu giữa recall, accuracy, tốc độ hội tụ và khả năng tổng quát; giữ nguyên cấu trúc dữ liệu, tập trung học mẫu khó.
+\end{itemize}
+
+Focal Loss là lựa chọn ưu tiên khi huấn luyện trên dữ liệu mất cân bằng, đặc biệt khi cần duy trì cả hiệu suất phân loại và khả năng tổng quát của mô hình.
+
+\section{Kết luận}
+
+Tổng hợp từ các phân tích trên, có thể rút ra những nhận định chính:
+
+\begin{itemize}
+    \item \textbf{Weak Supervision}: Chỉ phù hợp cho giai đoạn pretraining; sử dụng trực tiếp cho supervised learning gặp vấn đề do Domain Shift lớn, dẫn đến hiệu quả hạn chế.
+    \item \textbf{Cross-Entropy (CE)}: Cung cấp baseline ổn định, nhưng khi dữ liệu mất cân bằng, CE không đủ khả năng tập trung học các mẫu khó, hạn chế recall cho lớp thiểu số.
+    \item \textbf{Class Weighting (Stage 3b)}: Cải thiện một phần hiệu quả trên lớp thiểu số, nhưng tạo ra gradient dao động mạnh, làm quá trình hội tụ chậm và thiếu ổn định.
+    \item \textbf{Focal Loss (Stage 3a)}: Thể hiện hiệu quả tối ưu trong mọi tiêu chí:
+    \begin{itemize}
+        \item Accuracy cao nhất trong nhóm supervised.
+        \item Thời gian huấn luyện nhanh nhất nhờ gradient triệt tiêu từ các mẫu dễ.
+        \item Giữ nguyên phân phối dữ liệu gốc, tránh bias và overfitting.
+    \end{itemize}
+\end{itemize}
+
+Tuy vậy, mô hình vẫn gặp khó khăn với những dạng ngữ cảnh phức tạp. Cụ thể, những câu mang sắc thái sarcasm hoặc irony thường bị dự đoán sai, các đoạn đối thoại đa câu đòi hỏi inference liên câu vẫn vượt quá khả năng hiện tại của mô hình, và những câu quote hoặc trích dẫn chứa ý nghĩa ẩn cần khả năng \emph{pragmatic inference} mà RoBERTa-base chưa thể thực hiện hiệu quả.
+
+Như vậy, Stage 3a (Focal Loss) là lựa chọn tối ưu cho supervised learning trên dữ liệu mất cân bằng, nhưng việc cải thiện khả năng xử lý ngữ cảnh tinh vi vẫn cần các phương pháp bổ trợ, như \textit{active learning} hoặc \textit{teacher models} nâng cao.

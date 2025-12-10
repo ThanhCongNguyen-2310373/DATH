@@ -1,0 +1,103 @@
+\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+
+\section{Kết luận}
+Đề tài đã xây dựng một pipeline huấn luyện gồm bốn Stage, nhằm phân tích toàn diện tác động của các chiến lược xử lý mất cân bằng dữ liệu trong bài toán phân loại cảm xúc trên tập 21.8k bình luận về game – vốn có phân bố cảm xúc lệch mạnh theo tự nhiên. Việc tổ chức pipeline theo từng Stage độc lập cho phép so sánh có hệ thống giữa các hướng tiếp cận: từ nhãn yếu dựa trên tín hiệu heuristic, các phương pháp cân bằng ở mức dữ liệu, cho đến những kỹ thuật cân bằng ở mức hàm mất mát. Nhờ đó, đề tài không chỉ đánh giá hiệu năng mà còn đưa ra nhận định về tính ổn định, khả năng học ngữ nghĩa và mức độ phù hợp của từng chiến lược trong bối cảnh dữ liệu ngôn ngữ.
+
+\textbf{Weak Supervision (Stage 1)}
+
+
+Stage~1 cho thấy ưu điểm rõ rệt của Weak Supervision nằm ở khả năng tạo nhãn nhanh và chi phí thấp nhờ cơ chế tự động hóa với 8-Signal Strategy áp dụng trên dữ liệu Reddit. Cách tiếp cận này giúp mở rộng quy mô dữ liệu huấn luyện mà không cần gán nhãn thủ công, đồng thời cho phép mô hình học được các tín hiệu cảm xúc phổ biến trong cộng đồng người dùng.
+
+Tuy vậy, khi đánh giá trên tập Kaggle chuẩn, mô hình giảm gần 39\% Accuracy, cho thấy Domain Shift mạnh giữa Reddit và miền mục tiêu. Các nhãn được sinh từ heuristic Reddit mang theo nhiều bias ngữ cảnh—bao gồm slang, lối nói ẩn ý, và văn hoá cộng đồng đặc thù—khiến mô hình học sai quy luật và không thể tổng quát hoá sang dữ liệu có phong cách trung tính hơn.
+
+Bên cạnh đó, các tín hiệu heuristic chỉ mô phỏng một phần cấu trúc cảm xúc thực và không đủ tinh vi để mô tả các trường hợp khó như \textit{sarcasm} hoặc câu đa nghĩa. Kết quả Stage~1 vì vậy chủ yếu phản ánh chất lượng và giới hạn của nhãn yếu, thay vì đóng vai trò tối ưu hiệu năng cuối. Weak Supervision vẫn hữu ích để mở rộng dữ liệu và khảo sát xu hướng, nhưng không thể thay thế nhãn chất lượng cao trong các giai đoạn huấn luyện quyết định.
+
+\textbf{Supervised Learning (Stage 2 \& 3)}
+
+
+Trái với Stage~1, các Stage Supervised sử dụng nhãn chuẩn từ Kaggle, cho phép đánh giá mô hình một cách đáng tin cậy hơn và phản ánh chính xác tác động của từng kỹ thuật cân bằng. Nhờ dữ liệu được gán nhãn thủ công với chất lượng cao, mô hình có thể học được phân bố ngữ nghĩa tự nhiên của bài toán, từ đó cho phép quan sát rõ ràng hơn hiệu quả và giới hạn của từng phương pháp.
+\begin{itemize}
+     
+
+\item{Stage 2 – Undersampling}
+
+
+Undersampling giúp tăng Recall của lớp thiểu số, đặc biệt với các câu chứa cảm xúc Positive hoặc Negative hiếm gặp. Tuy nhiên, lợi ích này đi kèm với chi phí lớn: việc loại bỏ hàng nghìn mẫu của lớp đa số khiến mô hình mất nhiều thông tin quan trọng nằm gần biên quyết định (decision boundary).
+
+Trong bài toán xử lý ngôn ngữ tự nhiên, các mẫu near-boundary thường chứa cấu trúc ngữ nghĩa phức tạp, mơ hồ hoặc đa nghĩa. Đây là những tín hiệu then chốt giúp mô hình phân biệt cảm xúc tinh tế giữa Neutral và Positive/Negative. Khi mất các mẫu này, không gian biểu diễn bị méo, mô hình học lệch và dễ overfit vào phần dữ liệu còn lại.
+
+Kết quả cho thấy Accuracy tổng thể giảm, tốc độ hội tụ kém và hiệu năng dao động mạnh qua các epoch. Stage~2 vì vậy minh họa rõ rằng các kỹ thuật cân bằng ở mức dữ liệu – mặc dù đơn giản và dễ áp dụng – lại không phù hợp cho các mô hình ngôn ngữ tiền huấn luyện, vốn phụ thuộc nhiều vào việc giữ nguyên phân bố ngữ nghĩa đầu vào.
+
+\item{Stage 3a – Focal Loss}
+
+
+Focal Loss thể hiện hiệu năng toàn diện và ổn định nhất trong toàn bộ pipeline, đạt 82.35\% Accuracy, đồng thời hội tụ nhanh và giảm mạnh dao động so với Class Weighting.
+
+Điểm mạnh then chốt của Focal Loss nằm ở cơ chế điều chỉnh trọng số động theo độ khó của mẫu. Các mẫu dễ – thường là lớp đa số – được giảm trọng số, còn các mẫu khó hoặc ít xuất hiện được ưu tiên trong quá trình cập nhật tham số. Điều này làm giảm sự lấn át của lớp đa số mà không phải loại bỏ dữ liệu, giúp mô hình bảo toàn đầy đủ ngữ nghĩa và học ranh giới phân lớp mượt hơn.
+
+Nhờ kết hợp giữa “tập trung vào mẫu khó” và “giữ nguyên toàn bộ dữ liệu đầu vào”, Focal Loss vượt trội hơn cả Undersampling và Class Weighting trong điều kiện mất cân bằng nặng. Việc mô hình giữ được độ ổn định qua nhiều lần chạy chứng minh rằng phương pháp này vừa hiệu quả vừa đáng tin cậy.
+
+\item{Stage 3b – Class Weighting}
+
+
+Class Weighting là một kỹ thuật cân bằng ở mức thuật toán, tăng trọng số cho lớp thiểu số nhằm giảm xu hướng dự đoán lệch về lớp đa số.
+
+Tuy nhiên, Class Weighting thể hiện mức ổn định kém hơn Focal Loss, đặc biệt khi phân bố cảm xúc lệch mạnh (Positive chỉ khoảng 30\%). Mô hình có xu hướng dao động giữa Precision và Recall, cho thấy ranh giới phân lớp dễ bị dịch chuyển theo hàm loss. Ngoài ra, tốc độ hội tụ chậm hơn khiến việc huấn luyện cần nhiều epoch hơn để đạt hiệu năng tối ưu.
+
+Mặc dù tốt hơn Undersampling và vẫn phù hợp với các bài toán mất cân bằng vừa phải, Class Weighting bộc lộ giới hạn rõ rệt khi dữ liệu chứa nhiều câu phức tạp hoặc sắc thái ngữ nghĩa mơ hồ – những tình huống vốn đòi hỏi mô hình xử lý \textit{fine-grained context} tốt hơn.
+\end{itemize}
+\textbf{Giới hạn chung của mô hình}
+
+
+Dù đã áp dụng nhiều kỹ thuật cân bằng, mô hình vẫn gặp hạn chế rõ rệt với các dạng ngôn ngữ phức tạp. Đầu tiên, \textit{sarcasm} và \textit{irony} vẫn là điểm yếu cố hữu vì chúng đòi hỏi mô hình phải nhận diện sự lệch giữa nghĩa đen và nghĩa ngầm — một dạng suy luận nằm ngoài phạm vi token-level của RoBERTa-base.
+
+Bên cạnh đó, mô hình khó xử lý \textit{pragmatic inference} và các bình luận mang tính văn hoá cộng đồng (meme, ẩn ý, shorthand), vốn yêu cầu kiến thức nền và khả năng suy luận ngữ dụng mà mô hình encoder-base không có.
+
+Đối với các câu chứa trích dẫn đa tầng nghĩa hoặc hội thoại dạng “quote + reply”, mô hình thường xác định sai đối tượng bị nhận xét do không có cơ chế mô hình hóa discourse hoặc theo dõi ngữ cảnh liên câu.
+
+Cuối cùng, trong hội thoại đa câu, đặc biệt khi người dùng thay đổi thái độ qua từng câu, RoBERTa-base khó nắm bắt quan hệ liên câu (contrast, concession, shift in stance), khiến phân loại cảm xúc thiếu ổn định.
+
+Những giới hạn này xuất phát chủ yếu từ kiến trúc RoBERTa-base — tối ưu cho phân loại trực tiếp, nhưng không đủ mạnh cho các nhiệm vụ đòi hỏi reasoning, ngữ dụng sâu, hoặc phân tích ngữ cảnh mở rộng.
+
+\textbf{Kết luận tổng thể}
+
+
+Từ toàn bộ kết quả thực nghiệm, Focal Loss (Stage~3a) nổi bật là phương pháp mang lại hiệu năng cao nhất, độ ổn định tốt, và đặc biệt phù hợp với bài toán phân loại cảm xúc có phân bố lệch nặng trong miền Gaming. Cơ chế tập trung vào mẫu khó giúp mô hình vừa duy trì độ chính xác tổng thể, vừa cải thiện khả năng nhận diện lớp thiểu số mà không cần can thiệp trực tiếp vào dữ liệu.
+
+Ngược lại, Weak Supervision và Undersampling tuy không thể sử dụng như chiến lược huấn luyện chính, nhưng vẫn đóng vai trò quan trọng trong việc mở rộng góc nhìn về pipeline: Weak Supervision cho thấy giới hạn của nhãn yếu và tác động của Domain Shift; còn Undersampling minh họa rõ ràng rủi ro mất mát thông tin ngữ nghĩa khi can thiệp vào phân bố dữ liệu.
+
+Tổng thể, kết quả củng cố nhận định rằng các phương pháp cân bằng ở mức thuật toán (loss-level) — vốn bảo toàn toàn bộ phân bố ngữ nghĩa tự nhiên — mang lại sự ổn định và khả năng tổng quát tốt hơn đáng kể so với các chiến lược thao tác dữ liệu. Điều này đặc biệt quan trọng trong các bài toán ngôn ngữ, nơi mỗi mẫu đều chứa nhiều tín hiệu ngữ dụng mà mô hình cần giữ lại để đạt tối ưu.
+
+\section{Hướng phát triển}
+
+Dựa trên các hạn chế đã được nhận diện, đề tài đề xuất một số định hướng mở rộng nhằm cải thiện chất lượng nhãn, tăng khả năng tổng quát hóa và nâng cao hiệu quả của mô hình trong các bối cảnh phức tạp. Mặc dù cả Stage~1 và tập Kaggle đều lấy dữ liệu từ Reddit, sự khác biệt nằm ở mức độ nhiễu và chất lượng gán nhãn: tập Kaggle được tuyển chọn và kiểm duyệt thủ công, trong khi Stage~1 sử dụng Reddit raw cùng heuristic nên chứa nhiều noise và bias.
+
+\textbf{Ứng dụng Large Language Models (LLM) làm Teacher Model} 
+
+
+Thay vì phụ thuộc hoàn toàn vào hệ thống heuristic từ Reddit, các mô hình ngôn ngữ lớn như GPT-4 hoặc Llama-3 có thể được sử dụng như một ``Teacher Model’’ để:
+\begin{itemize}
+    \item Tinh lọc và giảm nhiễu cho nhãn yếu, hạn chế các dạng bias đặc thù cộng đồng.
+    \item Sinh pseudo-label chất lượng cao cho các mẫu khó, bao gồm sarcasm, câu đa nghĩa hoặc cấu trúc ngữ dụng phức tạp.
+\end{itemize}
+Cách tiếp cận LLM-as-Teacher cho phép kết hợp lợi thế của Weak Supervision (tốc độ, chi phí thấp) với độ chính xác của Supervised Learning, đặc biệt hiệu quả khi kích thước dữ liệu lớn nhưng nguồn lực gán nhãn hạn chế.
+
+\textbf{Tận dụng Active Learning để tối ưu chi phí gán nhãn} 
+
+
+Active Learning giúp mô hình chủ động lựa chọn các mẫu mà nó chưa chắc chắn để đưa tới người gán nhãn. Điều này giúp giảm đáng kể chi phí so với việc gán nhãn toàn bộ dữ liệu, đồng thời vẫn cải thiện rõ rệt hiệu năng. Phương pháp này phù hợp với bài toán sentiment, nơi nhiều câu mang sắc thái trung tính hoặc ẩn ý khó nhận diện.
+
+\textbf{Mở rộng sang phân tích cảm xúc đa chiều (Emotion Analysis)} 
+
+
+Thay vì ba lớp Positive--Neutral--Negative, mô hình có thể được mở rộng để nhận diện các cảm xúc chi tiết hơn như \textit{joy}, \textit{anger}, \textit{frustration}, \textit{excitement}. Điều này tăng giá trị ứng dụng thực tế, đặc biệt trong các hệ thống phản hồi người chơi, phân tích trải nghiệm game, hoặc các chatbot trong lĩnh vực Gaming.
+
+\textbf{Tích hợp mô hình hiểu ngữ cảnh nâng cao} 
+
+
+Để khắc phục hạn chế trong xử lý sarcasm, irony và hội thoại đa lượt, mô hình có thể chuyển sang các kiến trúc mạnh hơn như T5, BART hoặc các LLM được tinh chỉnh chuyên biệt. Các kiến trúc này cho phép học quan hệ liên câu, hiểu ý định và suy luận ngữ dụng tốt hơn so với mô hình encoder-base như RoBERTa.
+
+\textbf{Đa dạng hóa nguồn dữ liệu để giảm Domain Bias} 
+
+
+Dù đều xuất phát từ Reddit, tập Kaggle mang phong cách được tuyển chọn trong khi Reddit raw rất đa dạng về chủ đề và văn phong. Việc mở rộng thêm dữ liệu từ Facebook, TikTok, review game hoặc hội thoại thực giúp mô hình tiếp xúc với nhiều dạng biểu đạt khác nhau. Điều này làm giảm rủi ro Domain Shift và tăng khả năng tổng quát hóa sang các bối cảnh ngoài Reddit và Kaggle.

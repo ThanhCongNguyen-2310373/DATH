@@ -1,0 +1,306 @@
+%%%%%%%%%%%%%%%%%%%%%%%% PACKAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% {
+\documentclass[a4paper]{report}
+\usepackage{minted}
+\usepackage{xurl}
+\usepackage{a4wide,amssymb,epsfig,latexsym,multicol,array,hhline,fancyhdr}
+\usepackage{vntex}
+%\usepackage[utf8]{vietnam}
+\usepackage{amsmath}
+\usepackage{lastpage}
+\usepackage[lined,boxed,commentsnumbered]{algorithm2e}
+\usepackage{enumerate}
+\usepackage{xcolor}
+\usepackage{graphicx}  % Standard graphics package
+\usepackage{array}
+\usepackage{tabularx, caption}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{rotating}
+\usepackage{graphics}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{epsfig}
+\usepackage{tikz}
+\usepackage{cite}
+\usetikzlibrary{shapes.geometric, arrows}
+
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, draw=black, fill=black!10]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!10]
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!10]
+\tikzstyle{data} = [trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=red!10]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+\definecolor{framecolor}{RGB}{58, 108, 189}  %Định nghĩa màu xanh dương
+\usetikzlibrary{calc}   %thư viện tikz
+\usepackage{xfrac}
+\usepackage{bm}
+\usepackage{indentfirst}
+\usepackage{float}%move tables/ images
+\usepackage{titlesec} 
+%\usepackage{caption}
+\renewcommand{\baselinestretch}{1}
+\setlength{\parskip}{0.25cm} %khoảng cách các đoạn
+% \usepackage{biblatex}
+\usepackage[colorlinks]{hyperref}
+% \usepackage[acronym,toc]{glossaries}
+% \usepackage[symbols,nogroupskip,nonumberlist]{glossaries-extra}
+\usepackage[
+ sort=none,% no sorting or indexing required
+ abbreviations,% create list of abbreviations
+ symbols,% create list of symbols
+ stylemods,style=list, % set the default glossary style
+ nogroupskip, nonumberlist, nomain
+]{glossaries-extra}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{url}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%% FORMATTING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% {
+\DeclareMathOperator{\arccot}{arccot}
+\captionsetup[table]{name=Table}
+\captionsetup[figure]{name=Figure}
+\newenvironment{Description}{\list{}{%
+    \let\makelabel\descriptionlabel    % this comes from the original description environment
+    \setlength{\rightmargin}{\leftmargin}% this comes from the original quote environment
+    \setlength{\labelwidth}{0pt}%          this is new
+    }}{\endlist}
+
+
+    
+\hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true} 
+\usetikzlibrary{arrows,snakes,backgrounds}
+\usetikzlibrary{shapes, arrows, positioning}
+\definecolor{mathblue}{RGB}{0,114,188}
+% \makeatletter  \def\m@th{\mathsurround\z@\color{mathblue}} \makeatother
+% \everymath{\color{mathblue}}
+% \setmathfont[Color=000000]{Arial}
+%\usepackage{pstcol} 								% PSTricks with the standard color package
+\newtheorem{theorem}{{\bf Theorem}}
+\newtheorem{property}{{\bf Property}}
+\newtheorem{proposition}{{\bf Proposition}}
+\newtheorem{corollary}[proposition]{{\bf Corollary}}
+\newtheorem{lemma}[proposition]{{\bf Lemma}}
+
+\AtBeginDocument{\renewcommand{\listfigurename}{Danh sách hình ảnh}}
+\AtBeginDocument{\renewcommand{\listtablename}{Danh sách bảng}}
+\AtBeginDocument{\renewcommand*\contentsname{Mục lục}}
+\AtBeginDocument{\renewcommand*\refname{Tài liệu tham khảo}}
+%\usepackage{fancyhdr}
+
+%%%%%%%%%%%%%%%%%% SET HEADER AND FOOTER %%%%%%%%%%%%%%%%%%%%%%%%
+
+\setlength{\headheight}{40pt}
+\pagestyle{fancy}
+\fancyhead{} % clear all header fields
+\fancyhead[L]{
+ \begin{tabular}{rl}
+    \begin{picture}(25,15)(0,0)
+    \put(0,-8){\includegraphics[width=8mm, height=8mm]{hcmut.png}}
+    %\put(0,-8){\epsfig{width=10mm,figure=hcmut.eps}}
+   \end{picture}&
+	%\includegraphics[width=8mm, height=8mm]{hcmut.png} & %
+	\begin{tabular}{l}
+		\textbf{\bf \ttfamily Trường Đại học Bách Khoa - ĐHQG-HCM}\\
+		\textbf{\bf \ttfamily Khoa Khoa học và Kỹ thuật máy tính}
+	\end{tabular} 	
+ \end{tabular}
+}
+\fancyhead[R]{
+	\begin{tabular}{l}
+		\tiny \bf \\
+		\tiny \bf 
+	\end{tabular}  }
+\fancyfoot{} % clear all footer fields
+\fancyfoot[L]{\scriptsize\ttfamily Báo cáo Đồ án tổng hợp - Học kỳ 251 - Năm học 2025 - 2026}
+\fancyfoot[R]{\scriptsize \ttfamily Trang {\thepage}/\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+\makeatletter
+\newcounter {subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection .\@arabic\c@subsubsubsection}
+\newcommand\subsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\normalsize\bfseries}}
+\newcommand*\l@subsubsubsection{\@dottedtocline{3}{10.0em}{4.1em}}
+\newcommand*{\subsubsubsectionmark}[1]{}
+% \def\m@th{\mathsurround\z@\color{mathblue}}
+\makeatother
+% }
+% }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ACRONYMS & SYMBOLS
+% {
+% \makeglossaries
+\setabbreviationstyle{long-short}
+\newabbreviation{fig}{Fig.}{Figure}
+\newabbreviation{tab}{Tab.}{Table}
+\newabbreviation{eq}{Eq.}{Equation}
+\newabbreviation{eg}{e.g.}{For Example}
+\newabbreviation{ie}{i.e.}{That Is}
+% \glsnoexpandfields
+%\glsxtrnewsymbol[description = {: Tập hợp số tự nhiên}]{natural}{\ensuremath{\mathbb{N}}}
+% }
+%%%%%%%%%%%%%%%% Thiết lập định dạng cho section %%%%%%%%%%%%%%%%%
+\titleformat{\section}
+ {\fontsize{13}{15}\bfseries} % Kích thước font là 13pt, in đậm
+ {\thesection.} % Số thứ tự section với dấu chấm
+ {5pt} % Khoảng cách giữa số thứ tự và tiêu đề
+ {} % Format trước tiêu đề
+\titleformat{\subsection}
+ {\fontsize{13}{13}\bfseries}
+ {\hspace{1em}\thesubsection.}
+ {5pt}
+ {}
+\titleformat{\subsubsection}
+ {\fontsize{13}{13}\bfseries}
+ {\hspace{1.5em}\thesubsubsection.}
+ {5pt}
+ {}
+ \titleformat{\subsubsubsection}
+ {\fontsize{13}{13}\bfseries}
+ {\hspace{1.5em}\thesubsubsubsection/}
+ {5pt}
+ {}
+\titlespacing*{\section} % Áp dụng cho \section
+{0pt}  % Lề trái (left margin)
+{0pt} % Khoảng cách trước tiêu đề (before the title)
+{0pt} % Khoảng cách sau tiêu đề (after the title)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% DOCUMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Math operators
+\newcommand{\project}{\pi}
+\newcommand{\select}{\sigma}
+\newcommand{\join}{\bowtie}
+\newcommand{\rename}{\rho}
+\newcommand{\group}{\mathcal{F}}
+\newcommand{\sub}{\textsubscript}
+
+\begin{document}
+
+% --- Bắt đầu đánh số La Mã cho phần đầu (i, ii, iii...) ---
+\pagenumbering{roman}
+%%%%%%%%%%%%%%%%%%%%%%%%% TITLE PAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{titlepage}
+
+\begin{tikzpicture}[overlay, remember picture]
+\draw [line width = 3pt, framecolor]
+    ($ (current page.north west) + (2.0cm, -2.0cm) $)
+    rectangle
+    ($ (current page.south east) + (-2.0cm, 2.0cm) $);
+\draw [line width = 1pt, framecolor]
+    ($ (current page.north west) + (2.15cm, -2.15cm) $)
+    rectangle
+    ($ (current page.south east) + (-2.15cm, 2.15cm) $);
+\end{tikzpicture}
+
+\vspace{-0.7cm}
+
+\begin{center}
+\Large
+\textbf{ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH} \\
+\textbf{TRƯỜNG ĐẠI HỌC BÁCH KHOA} \\
+\textbf{KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
+\end{center}
+
+\vspace{0.7cm}
+
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[width=5cm]{hcmut.png}
+\end{center}
+\end{figure}
+
+\vspace{0.4cm}
+
+
+\begin{center}
+\begin{tabular}{c}
+\multicolumn{1}{c}{\textbf{{\Large BÁO CÁO ĐỒ ÁN TỔNG HỢP}}}\\
+\\
+\hline
+% \multicolumn{1}{l}{\textbf{{\Large Bài tập lớn}}}\\
+\\
+
+
+
+\parbox{0.9\textwidth}{\centering \textbf{\textit{{\huge “Nghiên cứu và so sánh phương pháp Weak Supervision và Supervised Learning trong phân tích cảm xúc lĩnh vực Gaming”}}}}\\
+\\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.2cm}
+\begin{table}[h]
+\Large
+\centering
+    \begin{tabular}{rl}
+    \hspace{1.7 cm}\textbf{GVHD}:
+    & Tiến sĩ Nguyễn An Khương \\
+    %& ThS. Mai Xuân Toàn\\
+    & \\
+    \textbf{Sinh viên}: &Nguyễn Thành Công - 2310373 \\
+    &  Lê Thúy Hiền - 2310990 \\
+    \end{tabular}
+\end{table}
+\vspace{0.2cm}
+\begin{center}
+{\normalsize  THÀNH PHỐ HỒ CHÍ MINH, THÁNG 11 - 2025}
+\end{center}
+\end{titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagebreak
+
+\tableofcontents
+\pagebreak
+
+\pagebreak
+\listoffigures
+\listoftables
+
+\addcontentsline{toc}{section}{Danh sách hình ảnh}
+\addcontentsline{toc}{section}{Danh sách bảng}
+
+\renewcommand{\arraystretch}{1.5} % Tăng hệ số khoảng cách dòng (1.5 là ví dụ)
+\pagebreak
+
+\clearpage % Ngắt trang để đảm bảo chương 1 bắt đầu trang mới
+\pagenumbering{arabic} % Chuyển sang số 1, 2, 3...
+\setcounter{page}{1}   % Đặt lại bộ đếm về 1
+
+\input{CHUONG_1}
+\pagebreak
+\input{CHUONG_2}
+\pagebreak
+\input{CHUONG_3}
+\pagebreak
+\input{CHUONG4}
+\pagebreak
+\input{CHUONG5}
+\pagebreak
+\input{CHUONG6}
+
+% --- Phần Tài liệu tham khảo ---
+\bibliographystyle{ieeetr} 
+\bibliography{references}
+
+\end{document}
+
+
+
+
+
+
+
+
+

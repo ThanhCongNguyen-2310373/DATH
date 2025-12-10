@@ -1,0 +1,495 @@
+% ============================================================================
+% CHƯƠNG 2: CƠ SỞ LÝ THUYẾT (THEORETICAL BACKGROUND)
+% ============================================================================
+
+\chapter{CƠ SỞ LÝ THUYẾT}
+
+\section{Sentiment Analysis trong Gaming}
+
+\subsection{Khái niệm Sentiment Analysis}
+
+Sentiment Analysis (Phân tích cảm xúc), hay còn gọi là Opinion Mining, là một nhánh của Natural Language Processing (NLP) nhằm xác định thái độ, quan điểm, hoặc cảm xúc của người viết đối với một chủ đề, sản phẩm, hoặc sự kiện cụ thể \cite{liu2012sentiment}.
+
+\subsubsection{Định nghĩa hình thức}
+
+Cho một văn bản đầu vào $x = (w_1, w_2, ..., w_n)$ với $w_i$ là các từ trong câu, bài toán sentiment analysis là tìm hàm ánh xạ:
+
+\begin{equation}
+    f: \mathcal{X} \rightarrow \mathcal{Y}
+\end{equation}
+
+Trong đó, $\mathcal{X}$ là không gian văn bản đầu vào, và $\mathcal{Y}$ là tập nhãn cảm xúc với $\mathcal{Y} = \{\text{Positive}, \text{Neutral}, \text{Negative}\}$ cho bài toán 3 classes.
+
+Với deep learning, hàm $f$ được parameterize bởi neural network với trọng số $\theta$:
+
+\begin{equation}
+    f_\theta(x) = \arg\max_{y \in \mathcal{Y}} P(y | x; \theta)
+\end{equation}
+
+Mục tiêu huấn luyện là tìm $\theta^*$ minimize loss function:
+
+\begin{equation}
+    \theta^* = \arg\min_\theta \mathcal{L}(\theta) = \arg\min_\theta \sum_{i=1}^{N} \ell(f_\theta(x_i), y_i)
+\end{equation}
+
+với $\ell$ là loss function (Cross Entropy, Focal Loss, etc.), $N$ là số mẫu training.
+
+\subsubsection{Ba cấp độ Sentiment Analysis}
+
+\begin{enumerate}
+    \item \textbf{Document-level:} Phân loại toàn bộ văn bản (review, article)
+    
+    \item \textbf{Sentence-level:} Phân tích từng câu riêng lẻ
+    
+    \item \textbf{Aspect-level:} Phân tích theo khía cạnh cụ thể
+\end{enumerate}
+
+\textbf{Đề tài này:} Sentence-level sentiment classification trên gaming reviews/comments (3-class).
+
+\subsection{Đặc điểm ngôn ngữ Gaming}
+
+Ngôn ngữ gaming có những đặc trưng riêng biệt so với văn bản thông thường, đòi hỏi xử lý đặc biệt:
+
+\subsubsection{Thuật ngữ kỹ thuật chuyên ngành (Technical Jargon)}
+
+Gaming sử dụng rất nhiều thuật ngữ kỹ thuật chỉ có trong lĩnh vực này:
+
+\begin{table}[h]
+    \centering
+    \caption{Ví dụ gaming technical terms với sentiment context}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Term} & \textbf{Nghĩa} & \textbf{Sentiment Context} \\
+        \hline
+        FPS drop & Giảm khung hình & Negative (performance issue) \\
+        \hline
+        Input lag & Độ trễ nhập liệu & Negative (responsiveness) \\
+        \hline
+        Hitbox & Vùng va chạm & Neutral/Negative (nếu "bad hitbox") \\
+        \hline
+        Nerf & Giảm sức mạnh & Negative (nếu favorite character) \\
+        \hline
+        Buff & Tăng sức mạnh & Positive (nếu benefit player) \\
+        \hline
+        Meta & Strategy dominant & Neutral (descriptive) \\
+        \hline
+        Grinding & Chơi lặp lại kiếm item & Negative (tedious) \\
+        \hline
+        RNG & Random number generator & Negative (luck-based) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Thách thức:} General-purpose sentiment models (trained trên movie/product reviews) không hiểu các thuật ngữ này. Ví dụ: "This game has terrible FPS drops" $\rightarrow$ Model cần hiểu "FPS drops" = negative indicator.
+
+\textbf{Giải pháp trong đề tài:} Đề tài giải quyết vấn đề này bằng cách sử dụng RoBERTa-Twitter đã được pre-trained trên social media để xử lý tốt hơn slang và jargon, bổ sung gaming-specific lexicon trong Weak Supervision (Signal 5), và fine-tune trên gaming data để model học gaming vocabulary đặc thù.
+
+\subsubsection{Slang và từ viết tắt đặc thù (Gaming Slang)}
+
+Cộng đồng gaming phát triển ngôn ngữ slang riêng, thay đổi nhanh theo xu hướng:
+
+\begin{table}[h]
+    \centering
+    \caption{Gaming slang với sentiment implications}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Slang} & \textbf{Nghĩa đầy đủ} & \textbf{Sentiment} \\
+        \hline
+        P2W & Pay-to-win (trả tiền thắng) & Strongly Negative \\
+        \hline
+        GOTY & Game of the Year & Strongly Positive \\
+        \hline
+        GG EZ & Good game, easy & Positive/Toxic context \\
+        \hline
+        OP & Overpowered (quá mạnh) & Mixed (positive if fun) \\
+        \hline
+        Trash/dogshit & Extremely bad & Strongly Negative \\
+        \hline
+        Banger & Excellent game/music & Strongly Positive \\
+        \hline
+        Mid & Mediocre, average & Neutral/Slightly Negative \\
+        \hline
+        Bussin & Very good & Positive \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Ví dụ phức tạp:} Câu "This P2W garbage is a cash grab" thể hiện Strongly Negative do sự kết hợp của "P2W" (negative), "garbage" (negative) và "cash grab" (negative), yêu cầu model phải học được cụm từ "cash grab" như một negative gaming term. Ngược lại, "GOTY material, absolute banger" mang sentiment Strongly Positive với sự kết hợp của "GOTY" (positive), "banger" (positive) và "absolute" đóng vai trò như amplifier. Trong khi đó, "Game is mid, nothing special" thể hiện Neutral/Slightly Negative, với "mid" là Gen Z slang có nghĩa mediocre, không phải positive nhưng cũng không phải strongly negative.
+
+\subsubsection{Đa nghĩa theo ngữ cảnh (Polysemy)}
+
+Hiện tượng đa nghĩa là một thách thức đặc thù trong ngôn ngữ gaming, nơi cùng một từ vựng có thể mang sắc thái cảm xúc hoàn toàn trái ngược tùy thuộc vào ngữ cảnh sử dụng. Điển hình là thuật ngữ "broken"; trong khi ngữ cảnh kỹ thuật ("Game is broken"), từ này mang nghĩa tiêu cực chỉ sự hỏng hóc hay lỗi game, thì khi đề cập đến chiến thuật ("This combo is broken"), nó lại chuyển sang hàm ý tích cực, khen ngợi sức mạnh vượt trội (overpowered) của nhân vật. Tương tự, từ "sick" cũng biến đổi linh hoạt từ thái độ chán nản, khó chịu ("sick of this bug") sang sự thán phục, phấn khích cực độ trước một pha xử lý hay ("That play was sick!"). Ngoài ra, các thuật ngữ như "grinding" (cày cuốc) cũng mang tính lưỡng nghĩa, có thể bị coi là nhàm chán (tedious) hoặc thú vị tùy vào trải nghiệm người chơi. Chính sự phức tạp này đòi hỏi hệ thống phải sử dụng các mô hình kiến trúc Transformer như RoBERTa với cơ chế self-attention để nắm bắt chính xác ngữ cảnh toàn cục thay vì chỉ dựa vào ý nghĩa đơn lẻ của từ khóa.
+
+\subsubsection{Sarcasm và Irony (Châm biếm)}
+
+Gaming community thường sử dụng sarcasm để bày tỏ thất vọng hoặc châm chọc:
+
+\textbf{Marker rõ ràng: "/s" tag:} Câu "Yeah, 60 FPS on a 4090, totally optimized /s" có literal sentiment là Positive (60 FPS, optimized), nhưng khi có /s tag thì trở thành Negative do sarcasm về optimization kém, với ý nghĩa thực sự là game chạy chỉ 60 FPS trên card đồ họa mạnh nhất chứng tỏ tối ưu tệ. Tương tự, "Oh great, another microtransaction /s" có literal sentiment Positive ("great") nhưng với /s tag biến thành Negative thể hiện sự phản đối microtransaction.
+
+\textbf{Implicit sarcasm (không có /s):} Câu "Wow, crashing 10 times in an hour, what a masterpiece" chứa "masterpiece" (positive word) kết hợp với "crashing 10 times" (negative fact), sarcasm được implied và sentiment thực sự là Negative. Tương tự, "Thanks for the 20GB patch that fixed nothing" có "Thanks" (positive) nhưng đi kèm "fixed nothing" (negative), tạo thành ironic gratitude với sentiment Negative.
+
+\textbf{Xử lý trong đề tài:} Đề tài sử dụng Weak Supervision (Signal 6) để detect "/s" tag và flip sentiment (positive $\leftrightarrow$ negative), đồng thời detect các combinations như "great" + negative context để tính sarcasm probability. Tuy nhiên, một limitation là implicit sarcasm vẫn khó detect hoàn toàn do require human-like reasoning.
+
+
+% ----------------------------------------------------------------------------
+\section{RoBERTa Model}
+
+\subsection{Từ BERT đến RoBERTa}
+
+\subsubsection{BERT (Bidirectional Encoder Representations from Transformers)}
+
+BERT \cite{devlin2019bert} là mô hình Transformer-based được Google giới thiệu năm 2018, tạo ra bước ngoặt trong NLP:
+
+\textbf{Kiến trúc:} BERT sử dụng encoder-only Transformer, chỉ dùng encoder stack mà không có decoder, với 12 layers cho phiên bản base và 24 layers cho large. Hidden size là 768 (base) hoặc 1024 (large), số attention heads là 12 (base) hoặc 16 (large), và tổng số parameters là 110M (base) hoặc 340M (large).
+
+\textbf{Pre-training Tasks:}
+
+\begin{enumerate}
+    \item \textbf{Masked Language Modeling (MLM):} Task này mask 15\% tokens trong câu với [MASK], và mô hình dự đoán từ bị mask dựa vào context hai chiều. Ví dụ: "The game is [MASK]" $\rightarrow$ predict "amazing".
+    
+    \item \textbf{Next Sentence Prediction (NSP):} Task này cho 2 câu A, B và predict liệu B có theo sau A không, với mục đích học sentence-level relationships.
+\end{enumerate}
+
+\textbf{Hạn chế của BERT:} BERT có một số hạn chế như NSP task không thực sự hữu ích (RoBERTa sau này đã bỏ), static masking với mask pattern giống nhau mỗi epoch, batch size nhỏ (256) và train time ngắn, cùng với việc pre-trained chỉ trên BookCorpus và Wikipedia (formal text).
+
+\subsubsection{RoBERTa (Robustly Optimized BERT Pretraining Approach)}
+
+RoBERTa \cite{liu2019roberta} (Facebook AI, 2019) là phiên bản tối ưu của BERT:
+
+\textbf{Cải tiến chính:}
+
+\begin{enumerate}
+    \item \textbf{Bỏ Next Sentence Prediction (NSP):} Research chứng minh NSP không giúp tăng performance, do đó RoBERTa chỉ giữ lại Masked Language Modeling (MLM).
+    
+    \item \textbf{Dynamic Masking:} Khác với BERT sử dụng static mask (cùng pattern mỗi epoch), RoBERTa mask tokens khác nhau mỗi lần đưa vào model, giúp model thấy nhiều masking patterns hơn và generalize tốt hơn.
+    
+    \item \textbf{Larger Batches \& Longer Training:} BERT sử dụng batch size 256 và train 1M steps, trong khi RoBERTa tăng batch size lên 8K và train với nhiều data hơn, giúp đạt stable gradients và better convergence.
+    
+    \item \textbf{Byte-Pair Encoding (BPE):} BERT sử dụng WordPiece với 30K vocab, trong khi RoBERTa sử dụng BPE với 50K vocab (character-level subwords), giúp handle rare words tốt hơn như gaming slang và typos.
+    
+    \item \textbf{More Training Data:} BERT sử dụng 16GB text (BookCorpus + Wikipedia), trong khi RoBERTa tăng lên 160GB text bằng cách thêm CC-News, OpenWebText và Stories.
+\end{enumerate}
+
+\textbf{Kết quả:} RoBERTa đạt SOTA trên GLUE, SQuAD, RACE benchmarks, vượt BERT 1-3\% accuracy.
+
+\subsection{RoBERTa-Twitter Variant}
+
+\textbf{Model sử dụng:} \texttt{cardiffnlp/twitter-roberta-base-sentiment-latest}
+
+\subsubsection{Đặc điểm RoBERTa-Twitter}
+
+RoBERTa-Twitter base model có 125M parameters, được pre-trained trên \textbf{124 million tweets} (thay vì BookCorpus). Corpus này bao gồm informal language, slang, abbreviations, emoji, hashtags, @mentions, short-form text ($<$280 characters), và social media linguistic patterns.
+
+Model này được fine-tuned cho Sentiment Analysis trên TweetEval benchmark với 3-class (Negative, Neutral, Positive), $\sim$60K labeled tweets, và F1-score: 0.92 (SOTA trên Twitter sentiment). Vocabulary gồm 50K BPE tokens bao gồm common emoji tokens, social media abbreviations (lol, omg, tbh, etc.), và gaming terms learned from tweets (gg, fps, noob, etc.).
+
+\subsubsection{Tại sao phù hợp với Gaming Sentiment?}
+
+\begin{table}[h]
+    \centering
+    \caption{So sánh linguistic features: Twitter vs Gaming Comments}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Feature} & \textbf{Twitter} & \textbf{Gaming (Reddit/Steam)} \\
+        \hline
+        Average length & 50-100 chars & 100-300 chars \\
+        \hline
+        Informal language & \checkmark & \checkmark \\
+        \hline
+        Slang/abbreviations & \checkmark & \checkmark \\
+        \hline
+        Emoji usage & High & Medium \\
+        \hline
+        Sarcasm frequency & High & High \\
+        \hline
+        Technical jargon & Low & High (gaming-specific) \\
+        \hline
+        Sentiment expression & Direct & Direct + sarcasm \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Lợi ích:}
+
+\begin{enumerate}
+    \item \textbf{Linguistic similarity:} Reddit/Steam comments tương tự tweets về style
+    \item \textbf{Informal language handling:} Trained on slang, không bị shock với "P2W", "GG EZ"
+    \item \textbf{Short-form optimization:} Gaming comments thường ngắn ($<$512 tokens)
+    \item \textbf{Sarcasm awareness:} Twitter có nhiều sarcasm, model đã học patterns
+    \item \textbf{Transfer learning efficient:} Pre-trained sentiment head, chỉ cần fine-tune
+\end{enumerate}
+
+
+% ----------------------------------------------------------------------------
+\section{Weak Supervision}
+
+\subsection{Định nghĩa và Motivation}
+
+\textbf{Weak Supervision} là paradigm học máy sử dụng các nguồn nhãn "yếu" (noisy, inexact, incomplete) thay vì nhãn thủ công chính xác để huấn luyện model.
+
+\subsubsection{Taxonomy of Supervision}
+
+\begin{table}[h]
+    \centering
+    \caption{So sánh các loại supervision}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Type} & \textbf{Label Quality} & \textbf{Cost} & \textbf{Scale} & \textbf{Speed} \\
+        \hline
+        Supervised & Perfect & Very High & Small & Slow \\
+        \hline
+        Weak Supervision & Noisy & Low & Large & Fast \\
+        \hline
+        Semi-Supervised & Mixed & Medium & Medium & Medium \\
+        \hline
+        Unsupervised & None & Zero & Very Large & Fast \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Trade-off chính:} Label quality $\downarrow$, Cost $\downarrow$, Scale $\uparrow$
+
+\subsubsection{Nguồn gốc Weak Labels}
+
+\begin{enumerate}
+    \item \textbf{Crowdsourcing:} Nhãn từ non-expert workers (Amazon MTurk) với pros là cheap và scalable, nhưng cons là low quality, inconsistent, và need aggregation.
+    
+    \item \textbf{Heuristic Rules:} Rules viết bởi domain experts, ví dụ gaming: "IF 'P2W' in text THEN Negative". Pros bao gồm high precision và interpretable, nhưng cons là low coverage và manual engineering.
+    
+    \item \textbf{External Knowledge Bases:} Sentiment lexicons (VADER, SentiWordNet) có pros là general-purpose và pre-built, nhưng cons là domain mismatch (không có gaming terms).
+    
+    \item \textbf{Community Signals:} Upvotes, awards, engagement (ĐỀ TÀI NÀY) với ví dụ high upvote ratio $\rightarrow$ Positive sentiment. Pros bao gồm automatic, free, scalable, gaming-specific, nhưng cons là noisy và indirect proxy for sentiment.
+\end{enumerate}
+
+\subsection{Snorkel Framework}
+
+Snorkel \cite{ratner2017snorkel} là framework nổi tiếng cho weak supervision, phát triển bởi Stanford.
+
+\subsubsection{Kiến trúc Snorkel}
+
+
+\textbf{Các bước chính:}
+
+\begin{enumerate}
+    \item \textbf{Define Labeling Functions (LFs):} LF là hàm $\lambda_i: \mathcal{X} \rightarrow \{-1, 0, 1, ..., k\}$ với $-1$ biểu thị Abstain (không vote) và $0, 1, ..., k$ là Class labels. Ví dụ: $\lambda_{\text{P2W}}(x) = \text{Negative if "P2W" in } x \text{ else Abstain}$.
+    
+    \item \textbf{Apply LFs tạo Label Matrix:}
+    \begin{equation}
+        \Lambda \in \{-1, 0, 1, ..., k\}^{n \times m}
+    \end{equation}
+    với $n$ samples, $m$ labeling functions
+    
+    \item \textbf{Train Label Model (Probabilistic Graphical Model):} Bước này estimate accuracy của mỗi LF ($\alpha_i = P(\lambda_i \text{ correct})$), estimate correlations giữa LFs, và output probabilistic labels $\tilde{Y} = (\tilde{y}_1, ..., \tilde{y}_n)$.
+    
+    \item \textbf{Train Discriminative Model:} Bước này sử dụng $\tilde{Y}$ (noisy labels) để train neural network, giúp model học generalize từ noisy data.
+\end{enumerate}
+
+\subsubsection{Label Model: Probabilistic Formulation}
+
+Giả sử có $m$ labeling functions $\lambda_1, ..., \lambda_m$ và true label $Y^*$. Mô hình xác suất:
+
+\begin{equation}
+    P(\Lambda, Y^*) = P(Y^*) \prod_{i=1}^{m} P(\lambda_i | Y^*)
+\end{equation}
+
+Với assumptions bao gồm conditional independence $P(\lambda_i | Y^*, \lambda_j) = P(\lambda_i | Y^*)$ (given true label) và accuracy parameter $\alpha_i = P(\lambda_i = Y^* | Y^* \neq -1)$.
+
+Label model estimate $P(Y^* | \Lambda)$ bằng maximum likelihood:
+
+\begin{equation}
+    \theta^* = \arg\max_\theta \sum_{j=1}^{n} \log P(Y_j^* | \Lambda_j; \theta)
+\end{equation}
+
+\subsection{Weak Supervision trong Gaming (Đề tài này)}
+
+Đề tài này không sử dụng Snorkel trực tiếp, mà design custom weak supervision system tận dụng \textbf{Reddit community signals}.
+
+\subsubsection{Tại sao không dùng Snorkel?}
+
+Đề tài không dùng Snorkel vì Snorkel require viết nhiều LFs manually (heuristic rules), trong khi Reddit cung cấp sẵn rich metadata (upvotes, awards, comments) không cần rules phức tạp. Hơn nữa, custom voting mechanism phù hợp với gaming domain hơn general-purpose PGM.
+
+\subsubsection{8-Signal Strategy (Weighted Voting)}
+
+Thay vì Snorkel's label model, đề tài dùng \textbf{weighted voting} với 8 signals:
+
+\begin{equation}
+    \text{Label}(x) = \arg\max_{c \in \{\text{Pos, Neu, Neg}\}} \sum_{i=1}^{8} w_i \cdot \mathbb{1}(\text{Signal}_i(x) = c)
+\end{equation}
+
+với constraints:
+\begin{equation}
+    \text{Confidence}(x) = \frac{\max_c \sum_{i} w_i \cdot \mathbb{1}(\text{Signal}_i = c)}{\sum_{i} w_i} \geq 0.6
+\end{equation}
+
+\textbf{Ưư điểm so với Snorkel:} Phương pháp này simpler (không cần train PGM), faster (direct voting thay vì iterative optimization), interpretable (trọng số rõ ràng, có thể tune manually), và gaming-specific (signals thiết kế rieng cho Reddit gaming).
+
+\textbf{Nhược điểm:} Phương pháp này không model correlations giữa signals, không tự động estimate signal accuracy, và trọng số cần tune manually (không learned).
+
+% ----------------------------------------------------------------------------
+\section{Class Imbalance Problem}
+
+\subsection{Định nghĩa và Tác động}
+
+\subsubsection{Class Imbalance là gì?}
+
+Dataset có \textbf{class imbalance} khi phân phối các class không đều:
+
+\begin{equation}
+    \text{Imbalance Ratio (IR)} = \frac{\max_i |C_i|}{\min_j |C_j|}
+\end{equation}
+
+với $|C_i|$ là số mẫu của class $i$.
+
+\textbf{Ví dụ trong đề tài (Kaggle Dataset):} Dataset bao gồm Positive: 10,034 (43.3\%), Neutral: 9,083 (39.2\%), Negative: 4,072 (17.6\%), với $\text{IR} = 10,034 / 4,072 = 2.46$.
+
+\subsubsection{Tác động đến Machine Learning}
+
+\begin{enumerate}
+    \item \textbf{Bias toward Majority Class:} Model học theo đường tắt (shortcut), luôn predict Positive để đạt 43.3\% accuracy, và bỏ qua Negative class (quan trọng nhất cho dev).
+    
+    \item \textbf{Poor Minority Class Performance:} Recall Negative thấp (nhiều false negatives) vì model không học đủ patterns từ ít mẫu.
+    
+    \item \textbf{Misleading Accuracy:} Accuracy cao không có nghĩa model tốt, ví dụ predict all Positive đạt 43.3\% accuracy nhưng useless.
+\end{enumerate}
+
+\textbf{Ví dụ minh họa:}
+
+\begin{table}[h]
+    \centering
+    \caption{Model performance trên imbalanced data}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \hline
+        Positive (majority) & 0.88 & 0.92 & 0.90 \\
+        \hline
+        Neutral (medium) & 0.78 & 0.82 & 0.80 \\
+        \hline
+        Negative (minority) & \textbf{0.65} & \textbf{0.58} & \textbf{0.61} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+$\rightarrow$ Negative class (quan trọng nhất) có performance thấp nhất!
+
+\subsection{Focal Loss}
+
+\subsubsection{Motivation}
+
+Cross Entropy Loss chuẩn:
+
+\begin{equation}
+    CE(p_t) = -\log(p_t)
+\end{equation}
+
+với $p_t$ là xác suất predicted cho true class.
+
+\textbf{Vấn đề:} Tất cả mẫu contribute equally, kể cả "easy examples" (high confidence, $p_t \approx 1$).
+
+\textbf{Focal Loss idea:} Down-weight easy examples, focus on hard examples.
+
+\subsubsection{Công thức Focal Loss}
+
+Lin et al. \cite{lin2017focal} đề xuất Focal Loss cho object detection, sau đó được adapt cho classification:
+
+\begin{equation}
+    FL(p_t) = -\alpha_t (1 - p_t)^{\gamma} \log(p_t)
+\end{equation}
+
+\textbf{Thành phần:}
+
+\begin{enumerate}
+    \item \textbf{$(1 - p_t)^\gamma$: Modulating factor} với easy example ($p_t \to 1$) thì $(1 - p_t)^\gamma \to 0$ dẫn đến loss $\approx 0$, trong khi hard example ($p_t \to 0$) thì $(1 - p_t)^\gamma \to 1$ dẫn đến loss $\approx CE$. Tham số $\gamma$ controls focusing degree.
+    
+    \item \textbf{$\alpha_t$: Balancing factor} với $\alpha$ for positive class và $1-\alpha$ for negative class, compensate for class imbalance (similar to class weighting).
+\end{enumerate}
+
+\subsubsection{Tác động của Hyperparameters}
+
+\textbf{Gamma ($\gamma$):}
+
+\begin{table}[h]
+    \centering
+    \caption{Tác động của $\gamma$ (với $p_t = 0.9$ - easy example)}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{$\gamma$} & \textbf{$(1-p_t)^\gamma$} & \textbf{Loss reduction} & \textbf{Behavior} \\
+        \hline
+        0 & 1.0 & 0\% & Cross Entropy \\
+        \hline
+        1 & 0.1 & 90\% & Moderate focusing \\
+        \hline
+        2 & 0.01 & 99\% & Strong focusing \\
+        \hline
+        5 & 0.00001 & 99.999\% & Extreme focusing \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Khuyến nghị:} $\gamma = 2$ (paper recommendation), balance giữa easy/hard examples.
+
+\textbf{Alpha ($\alpha$):}
+
+Giá trị $\alpha = 0.25$ tương ứng với minority class (negative) weight = $1 - 0.25 = 0.75$, $\alpha = 0.5$ là balanced (không bias), và $\alpha = 0.75$ cho majority class weight = 0.75.
+
+\textbf{Trong đề tài:} $\alpha = 0.25$, $\gamma = 2$ (optimal từ experiments).
+
+\textbf{Gradient Analysis:}
+
+Gradient của Focal Loss:
+
+\begin{equation}
+    \frac{\partial FL}{\partial x} = \alpha_t y (1 - p_t)^\gamma \left[ \gamma p_t \log(p_t) + p_t - 1 \right]
+\end{equation}
+
+Với easy example ($p_t \to 1$), gradient $\to 0$ (ít update), trong khi hard example ($p_t \to 0$) có gradient lớn (nhiều update).
+
+\subsection{Class Weighting}
+
+\subsubsection{Công thức Class Weighting}
+
+Phương pháp đơn giản hơn Focal Loss: Tích hợp trọng số vào Cross Entropy.
+
+\textbf{Inverse Frequency Weighting:}
+
+\begin{equation}
+    w_j = \frac{N}{K \cdot n_j}
+\end{equation}
+
+với $N$ là tổng số mẫu (23,189), $K$ là số classes (3), và $n_j$ là số mẫu class $j$.
+
+\textbf{Ví dụ tính toán (Kaggle dataset):}
+
+\begin{align}
+    w_{\text{Positive}} &= \frac{23,189}{3 \times 10,034} = 0.770 \\
+    w_{\text{Neutral}} &= \frac{23,189}{3 \times 9,083} = 0.852 \\
+    w_{\text{Negative}} &= \frac{23,189}{3 \times 4,072} = 1.898
+\end{align}
+
+$\rightarrow$ Negative class nhận trọng số \textbf{2.46$\times$} cao hơn Positive!
+
+\subsubsection{Weighted Cross Entropy Loss}
+
+\begin{equation}
+    WCE = -\sum_{i=1}^{N} w_{y_i} \log(p_{y_i})
+\end{equation}
+
+Trong biểu thức trên, $N$ biểu thị tổng số mẫu trong một batch, $y_i$ là nhãn thực tế, và $p_{y_i}$ là xác suất dự đoán của mô hình đối với lớp đúng. Thành phần quan trọng nhất là $w_{y_i}$, đại diện cho trọng số được gán riêng cho từng lớp, thường được tính dựa trên nghịch đảo tần suất xuất hiện của lớp đó trong tập dữ liệu. Cụ thể, các lớp thiểu số sẽ được gán trọng số lớn hơn ($w > 1$) và ngược lại đối với lớp đa số.
+
+
+\subsection{Data-Level Methods}
+
+Ngoài algorithm-level (Focal Loss, Weighting), còn có data-level methods:
+
+\begin{enumerate}
+    \item \textbf{Undersampling:} Phương pháp giảm majority class xuống balance với minority, với pros là simple và balanced training, nhưng cons là mất data (23K $\to$ 12K) và information loss.
+    
+    \item \textbf{Oversampling:} Phương pháp duplicate minority class samples, với pros là không mất data, nhưng cons là overfitting risk và longer training.
+    
+    \item \textbf{SMOTE (Synthetic Minority Oversampling):} Phương pháp generate synthetic samples by interpolation, với pros là tăng diversity và không duplicate, nhưng cons là không phù hợp với text (discrete tokens).
+\end{enumerate}
+
+\textbf{Đề tài chọn Algorithm-level (Focal Loss, Weighting):} Không mất data, sử dụng full 23K samples.
+
+% ----------------------------------------------------------------------------
+% End of Chapter 2
+% ----------------------------------------------------------------------------
