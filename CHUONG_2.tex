@@ -339,7 +339,7 @@ Dataset có \textbf{class imbalance} khi phân phối các class không đều:
 
 với $|C_i|$ là số mẫu của class $i$.
 
-\textbf{Ví dụ trong đề tài (Kaggle Dataset):} Dataset bao gồm Positive: 10,034 (43.3\%), Neutral: 9,083 (39.2\%), Negative: 4,072 (17.6\%), với $\text{IR} = 10,034 / 4,072 = 2.46$.
+\textbf{Ví dụ trong đề tài (Kaggle Dataset):} Dataset bao gồm Positive: 9,777 (43.3\%), Neutral: 8,013 (39.2\%), Negative: 4,031 (17.6\%), với $\text{IR} = 9,777 / 4,031 = 2.43$.
 
 \subsubsection{Tác động đến Machine Learning}
 
@@ -445,9 +445,9 @@ Với easy example ($p_t \to 1$), gradient $\to 0$ (ít update), trong khi hard 
 
 \subsection{Class Weighting}
 
-\subsubsection{Công thức Class Weighting}
+\subsubsection{Động lực và Công thức}
 
-Phương pháp đơn giản hơn Focal Loss: Tích hợp trọng số vào Cross Entropy.
+Class Weighting là phương pháp đơn giản nhưng hiệu quả để xử lý mất cân bằng dữ liệu bằng cách gán trọng số khác nhau cho từng lớp trong hàm mất mát. Không giống như Focal Loss tập trung vào hard examples, Class Weighting điều chỉnh contribution của từng lớp dựa trên tần suất xuất hiện.
 
 \textbf{Inverse Frequency Weighting:}
 
@@ -455,25 +455,53 @@ Phương pháp đơn giản hơn Focal Loss: Tích hợp trọng số vào Cross
     w_j = \frac{N}{K \cdot n_j}
 \end{equation}
 
-với $N$ là tổng số mẫu (23,189), $K$ là số classes (3), và $n_j$ là số mẫu class $j$.
+với $N$ là tổng số mẫu trong tập huấn luyện (21,821), $K$ là số classes (3), và $n_j$ là số mẫu của class $j$.
 
-\textbf{Ví dụ tính toán (Kaggle dataset):}
+\textbf{Ví dụ tính toán với tập dữ liệu r/gaming:}
 
 \begin{align}
-    w_{\text{Positive}} &= \frac{23,189}{3 \times 10,034} = 0.770 \\
-    w_{\text{Neutral}} &= \frac{23,189}{3 \times 9,083} = 0.852 \\
-    w_{\text{Negative}} &= \frac{23,189}{3 \times 4,072} = 1.898
+    w_{\text{Positive}} &= \frac{21,821}{3 \times 9,777} = 0.744 \\
+    w_{\text{Neutral}} &= \frac{21,821}{3 \times 8,013} = 0.908 \\
+    w_{\text{Negative}} &= \frac{21,821}{3 \times 4,031} = 1.804
 \end{align}
 
-$\rightarrow$ Negative class nhận trọng số \textbf{2.46$\times$} cao hơn Positive!
+$\rightarrow$ Class Negative (thiểu số) nhận trọng số gấp \textbf{2.43 lần} so với class Positive (đa số), giúp mô hình chú ý nhiều hơn đến các mẫu Negative trong quá trình huấn luyện.
 
 \subsubsection{Weighted Cross Entropy Loss}
+
+Trọng số được tích hợp trực tiếp vào Cross Entropy Loss:
 
 \begin{equation}
     WCE = -\sum_{i=1}^{N} w_{y_i} \log(p_{y_i})
 \end{equation}
 
-Trong biểu thức trên, $N$ biểu thị tổng số mẫu trong một batch, $y_i$ là nhãn thực tế, và $p_{y_i}$ là xác suất dự đoán của mô hình đối với lớp đúng. Thành phần quan trọng nhất là $w_{y_i}$, đại diện cho trọng số được gán riêng cho từng lớp, thường được tính dựa trên nghịch đảo tần suất xuất hiện của lớp đó trong tập dữ liệu. Cụ thể, các lớp thiểu số sẽ được gán trọng số lớn hơn ($w > 1$) và ngược lại đối với lớp đa số.
+với $N$ là số mẫu trong batch, $y_i$ là nhãn thực tế của mẫu thứ $i$, $p_{y_i}$ là xác suất dự đoán cho lớp đúng, và $w_{y_i}$ là trọng số tương ứng với lớp $y_i$.
+
+\textbf{Cơ chế hoạt động:} Khi một mẫu thuộc lớp thiểu số bị misclassify, loss value sẽ được nhân với trọng số lớn hơn (ví dụ: $w_{\text{Negative}} = 1.804$), tạo gradient mạnh hơn và buộc mô hình phải học tốt hơn trên lớp đó. Ngược lại, lớp đa số có trọng số nhỏ hơn ($w_{\text{Positive}} = 0.744$), giảm ảnh hưởng của chúng trong tổng loss, tránh mô hình bị bias về lớp đa số.
+
+\subsubsection{So sánh với Focal Loss}
+
+\begin{table}[h]
+    \centering
+    \caption{So sánh Class Weighting vs Focal Loss}
+    \begin{tabular}{|l|p{5.5cm}|p{5.5cm}|}
+        \hline
+        \textbf{Tiêu chí} & \textbf{Class Weighting} & \textbf{Focal Loss} \\
+        \hline
+        \textbf{Cơ chế} & Điều chỉnh loss theo class frequency & Điều chỉnh loss theo prediction confidence \\
+        \hline
+        \textbf{Focus} & Thiểu số vs đa số & Hard vs easy examples \\
+        \hline
+        \textbf{Hyperparameters} & Không cần tuning (auto-computed) & Cần tune $\gamma$ và $\alpha$ \\
+        \hline
+        \textbf{Ưu điểm} & Đơn giản, ổn định, dễ implement & Mạnh hơn với hard examples \\
+        \hline
+        \textbf{Nhược điểm} & Không xử lý được hard examples & Phức tạp hơn, cần tuning cẩn thận \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Trong đề tài này:} Cả hai phương pháp đều được thực hiện và so sánh ở Stage 3 (Focal Loss - Stage 3a, Class Weighting - Stage 3b). Kết quả cho thấy Class Weighting đạt hiệu quả tốt hơn một chút với F1-macro = 82.35\% so với Focal Loss F1-macro = 81.89\%, chứng tỏ phương pháp đơn giản đôi khi vẫn vượt trội hơn các kỹ thuật phức tạp khi được áp dụng đúng cách.
 
 
 \subsection{Data-Level Methods}

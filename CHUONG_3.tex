@@ -20,8 +20,8 @@
         \node (s1result) [rectangle, draw, text width=2.5cm, align=center, below of=s1train] {Stage 1 Result};
         
         % Stage 2
-        \node (s2data) [rectangle, draw, text width=2.5cm, align=center, right of=s1data, xshift=3cm] {Kaggle\\23,189 samples};
-        \node (s2balance) [rectangle, draw, text width=2.5cm, align=center, below of=s2data] {Undersample\\12,216 samples};
+        \node (s2data) [rectangle, draw, text width=2.5cm, align=center, right of=s1data, xshift=3cm] {Kaggle\\21,821 samples};
+        \node (s2balance) [rectangle, draw, text width=2.5cm, align=center, below of=s2data] {Undersample\\12,093 samples};
         \node (s2train) [rectangle, draw, text width=2.5cm, align=center, below of=s2balance] {RoBERTa\\Fine-tune};
         \node (s2result) [rectangle, draw, text width=2.5cm, align=center, below of=s2train] {Stage 2 Result};
         
@@ -79,13 +79,13 @@ Dữ liệu đầu vào (input) cho pipeline là raw gaming text bao gồm Reddi
 
 \textbf{Luồng dữ liệu:} Kaggle Reviews $\xrightarrow{\text{Undersample}}$ Balanced Data $\xrightarrow{\text{RoBERTa + CE}}$ Model$_2$
 
-\textbf{Mô tả:} Stage 2 sử dụng Kaggle dataset với 23,189 samples đã có ground truth labels. Tuy nhiên, dataset này có class imbalance với Positive chiếm 43.3\%, Neutral 39.2\%, và Negative chỉ 17.6\%. Để tạo baseline có dữ liệu cân bằng, đề tài áp dụng \textbf{undersampling} giảm xuống còn 12,216 samples với phân bố đều giữa 3 classes. Model RoBERTa sau đó được fine-tune trên balanced data này với Cross Entropy Loss chuẩn, tạo ra Model$_2$ làm baseline để so sánh.
+\textbf{Mô tả:} Stage 2 sử dụng Kaggle dataset với 21,821 samples đã có ground truth labels. Tuy nhiên, dataset này có class imbalance với Positive chiếm 44.8\%, Neutral 35.7\%, và Negative chỉ 18.5\%. Để tạo baseline có dữ liệu cân bằng, đề tài áp dụng \textbf{undersampling} giảm xuống còn 12,093 samples với phân bố đều giữa 3 classes. Model RoBERTa sau đó được fine-tune trên balanced data này với Cross Entropy Loss chuẩn, tạo ra Model$_2$ làm baseline để so sánh.
 
 \subsubsection{Stage 3: Advanced Loss Functions Flow}
 
 \textbf{Luồng dữ liệu:} Kaggle Full $\xrightarrow{\text{3a: Focal Loss} \lor \text{3b: Class Weight}}$ RoBERTa $\xrightarrow{\text{Fine-tune}}$ Model$_3$
 
-\textbf{Mô tả:} Stage 3 sử dụng \textbf{full imbalanced Kaggle dataset} (23,189 samples) không undersample, nhằm giữ lại tất cả thông tin. Để giải quyết class imbalance, đề tài thử nghiệm 2 chiến lược algorithm-level: \textbf{Stage 3a sử dứng Focal Loss} với $\alpha=0.25, \gamma=2.0$ để down-weight easy examples và focus vào hard examples (thường là minority class); \textbf{Stage 3b sử dụng Class Weighting} với inverse frequency weighting để tăng trọng số cho minority classes trong loss function. Cả hai phương pháp đều fine-tune RoBERTa trên full data, tạo ra Model$_{3a}$ và Model$_{3b}$ tương ứng.
+\textbf{Mô tả:} Stage 3 sử dụng \textbf{full imbalanced Kaggle dataset} (21,821 samples) không undersample, nhằm giữ lại tất cả thông tin. Để giải quyết class imbalance, đề tài thử nghiệm 2 chiến lược algorithm-level: \textbf{Stage 3a sử dứng Focal Loss} với $\alpha=0.25, \gamma=2.0$ để down-weight easy examples và focus vào hard examples (thường là minority class); \textbf{Stage 3b sử dụng Class Weighting} với inverse frequency weighting để tăng trọng số cho minority classes trong loss function. Cả hai phương pháp đều fine-tune RoBERTa trên full data, tạo ra Model$_{3a}$ và Model$_{3b}$ tương ứng.
 
 \subsubsection{Stage 4: Comparative Analysis Flow}
 
