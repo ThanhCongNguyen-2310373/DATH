@@ -339,16 +339,16 @@ Dataset có \textbf{class imbalance} khi phân phối các class không đều:
 
 với $|C_i|$ là số mẫu của class $i$.
 
-\textbf{Ví dụ trong đề tài (Kaggle Dataset):} Dataset bao gồm Positive: 9,777 (43.3\%), Neutral: 8,013 (39.2\%), Negative: 4,031 (17.6\%), với $\text{IR} = 9,777 / 4,031 = 2.43$.
+\textbf{Ví dụ trong đề tài (Kaggle Dataset):} Dataset bao gồm Positive: 9,777 (44.8\%), Neutral: 8,013 (35.7\%), Negative: 4,031 (18.5\%), với $\text{IR} = 9,777 / 4,031 = 2.43$.
 
 \subsubsection{Tác động đến Machine Learning}
 
 \begin{enumerate}
-    \item \textbf{Bias toward Majority Class:} Model học theo đường tắt (shortcut), luôn predict Positive để đạt 43.3\% accuracy, và bỏ qua Negative class (quan trọng nhất cho dev).
+    \item \textbf{Bias toward Majority Class:} Model học theo đường tắt (shortcut), luôn predict Positive để đạt 44.8\% accuracy, và bỏ qua Negative class (quan trọng nhất cho dev).
     
     \item \textbf{Poor Minority Class Performance:} Recall Negative thấp (nhiều false negatives) vì model không học đủ patterns từ ít mẫu.
     
-    \item \textbf{Misleading Accuracy:} Accuracy cao không có nghĩa model tốt, ví dụ predict all Positive đạt 43.3\% accuracy nhưng useless.
+    \item \textbf{Misleading Accuracy:} Accuracy cao không có nghĩa model tốt, ví dụ predict all Positive đạt 44.8\% accuracy nhưng useless.
 \end{enumerate}
 
 \textbf{Ví dụ minh họa:}
@@ -501,22 +501,20 @@ với $N$ là số mẫu trong batch, $y_i$ là nhãn thực tế của mẫu th
     \end{tabular}
 \end{table}
 
-\textbf{Trong đề tài này:} Cả hai phương pháp đều được thực hiện và so sánh ở Stage 3 (Focal Loss - Stage 3a, Class Weighting - Stage 3b). Kết quả cho thấy Class Weighting đạt hiệu quả tốt hơn một chút với F1-macro = 82.35\% so với Focal Loss F1-macro = 81.89\%, chứng tỏ phương pháp đơn giản đôi khi vẫn vượt trội hơn các kỹ thuật phức tạp khi được áp dụng đúng cách.
-
 
 \subsection{Data-Level Methods}
 
 Ngoài algorithm-level (Focal Loss, Weighting), còn có data-level methods:
 
 \begin{enumerate}
-    \item \textbf{Undersampling:} Phương pháp giảm majority class xuống balance với minority, với pros là simple và balanced training, nhưng cons là mất data (23K $\to$ 12K) và information loss.
+    \item \textbf{Undersampling:} Phương pháp giảm majority class xuống balance với minority, với pros là simple và balanced training, nhưng cons là mất data (21,821 $\to$ 12,093) và information loss.
     
     \item \textbf{Oversampling:} Phương pháp duplicate minority class samples, với pros là không mất data, nhưng cons là overfitting risk và longer training.
     
     \item \textbf{SMOTE (Synthetic Minority Oversampling):} Phương pháp generate synthetic samples by interpolation, với pros là tăng diversity và không duplicate, nhưng cons là không phù hợp với text (discrete tokens).
 \end{enumerate}
 
-\textbf{Đề tài chọn Algorithm-level (Focal Loss, Weighting):} Không mất data, sử dụng full 23K samples.
+\textbf{Đề tài chọn Algorithm-level (Focal Loss, Weighting):} Không mất data, sử dụng full 21,821 samples.
 
 % ----------------------------------------------------------------------------
 % End of Chapter 2

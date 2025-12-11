@@ -67,7 +67,7 @@ Với $N$ là tổng số mẫu, $K=3$ là số lượng lớp, và $n_j$ là s�
 
 \subsubsection{Phương pháp Data-Level (Undersampling)}
 
-Ở mức dữ liệu, phương pháp **Undersampling** được sử dụng làm cơ sở so sánh (baseline). Kỹ thuật này giảm số lượng mẫu của lớp đa số xuống mức cân bằng với lớp thiểu số (từ 23K xuống 12K mẫu). Mặc dù đảm bảo sự cân bằng hoàn toàn, phương pháp này phải đánh đổi bằng việc mất đi một lượng lớn dữ liệu huấn luyện ($\sim$11K mẫu).
+Ở mức dữ liệu, phương pháp \textbf{Undersampling} được sử dụng làm cơ sở so sánh (baseline). Kỹ thuật này giảm số lượng mẫu của lớp đa số xuống mức cân bằng với lớp thiểu số (từ 21,821 xuống 12,093 mẫu). Mặc dù đảm bảo sự cân bằng hoàn toàn, phương pháp này phải đánh đổi bằng việc mất đi một lượng lớn dữ liệu huấn luyện ($\sim$9,728 mẫu).
 
 \subsection{Mục tiêu 3: So sánh định lượng các phương pháp}
 
@@ -223,22 +223,22 @@ Báo cáo được tổ chức thành 6 chương với luồng logic từ lý th
 
 \begin{description}
     \item[CHƯƠNG 1: TỔNG QUAN] \hfill \\
-    Đặt vấn đề, mục tiêu, phạm vi, đóng góp. Người đọc hiểu rõ context, motivation, và đóng góp khoa học.
+    Trình bày bối cảnh, ba thách thức chính và mục tiêu nghiên cứu, các đóng góp cốt lõi về chiến lược gán nhãn yếu tự động và các giải pháp xử lý mất cân bằng cho dữ liệu gaming.
     
     \item[CHƯƠNG 2: CƠ SỞ LÝ THUYẾT] \hfill \\
-    Sentiment Analysis trong gaming, RoBERTa, Weak Supervision, Class Imbalance (Focal Loss, Class Weighting). Nền tảng lý thuyết vững chắc.
+    Hệ thống hóa lý thuyết về phân tích cảm xúc trong game, mô hình RoBERTa và các phương pháp Weak Supervision. Trình bày cơ sở toán học của Focal Loss và Class Weighting làm nền tảng giải quyết bài toán mất cân bằng dữ liệu.    
     
     \item[CHƯƠNG 3: PHƯƠNG PHÁP ĐỀ XUẤT] \hfill \\
-    Pipeline 4 stages, 8-Signal Strategy, Focal Loss implementation, Evaluation Metrics. Người đọc có thể reproduce experiments.
+    Mô tả Pipeline 4 giai đoạn, chiến lược sinh nhãn yếu "8-Signal" từ dữ liệu Reddit, kỹ thuật cân bằng dữ liệu Undersampling và thuật toán Focal Loss/Class Weighting để tối ưu hóa quá trình huấn luyện mô hình.
     
     \item[CHƯƠNG 4: THỰC NGHIỆM VÀ KẾT QUẢ] \hfill \\
-    Thiết lập môi trường, kết quả định lượng, visualizations. Evidence định lượng rõ ràng.
+    Thiết lập môi trường và kết quả thực nghiệm chi tiết từng giai đoạn. Tổng hợp so sánh định lượng đa chiều về độ chính xác, F1-Score và tốc độ huấn luyện giữa các chiến lược thông qua biểu đồ và bảng số liệu.
     
     \item[CHƯƠNG 5: ĐÁNH GIÁ VÀ THẢO LUẬN] \hfill \\
-    Hiệu quả Weak Supervision, Focal Loss vs Class Weighting, Trade-off Analysis. Recommendations thực tế.
+    Thảo luận về giới hạn Domain Shift của phương pháp Weak Supervision. Phân tích sự đánh đổi kỹ thuật giữa các chiến lược Supervised và lý giải nguyên nhân Focal Loss đạt hiệu quả tối ưu nhất về độ ổn định và chính xác.
     
     \item[CHƯƠNG 6: KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN] \hfill \\
-    Kết luận, hạn chế, hướng phát triển (LLM teacher, Active Learning). Wrap-up toàn diện và vision tương lai.
+    Tổng kết hiệu quả của pipeline đề xuất, khẳng định vai trò của Focal Loss trong bài toán dữ liệu lệch. Đề xuất hướng mở rộng nghiên cứu sử dụng LLM Teacher hoặc Active Learning để nâng cao chất lượng hệ thống.
 \end{description}
 
 

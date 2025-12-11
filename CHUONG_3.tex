@@ -262,7 +262,7 @@ Signal này phân tích \textbf{gaming-specific vocabulary} trong text để det
 
 \textbf{Gaming Lexicon:}
 
-\begin{table}[h]
+\begin{table}[H]
     \centering
     \caption{Gaming-Specific Vocabulary (50+ terms)}
     \begin{tabular}{|l|l|l|}
@@ -813,7 +813,7 @@ class FocalLossTrainer(Trainer):
 \subsection{Training Configuration}
 
 Training configuration được thiết lập qua \texttt{TrainingArguments} của Hugging Face. Các hyperparameters quan trọng bao gồm: 
-\path{num_train_epochs=3}, 
+\path{num_train_epochs=5}, 
 \path{per_device_train_batch_size=16} và 
 \path{eval_batch_size=32}, 
 \path{learning_rate=2e-5} với 
@@ -831,7 +831,7 @@ training_args = TrainingArguments(
     output_dir='./results_stage3_focal',
     
     # Training parameters
-    num_train_epochs=3,
+    num_train_epochs=5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=32,
     
@@ -1017,8 +1017,10 @@ val_ds   = Dataset.from_pandas(val_df[[text_col, 'label_id']].rename(columns={'l
 test_ds  = Dataset.from_pandas(test_df[[text_col, 'label_id']].rename(columns={'label_id': 'label'}))
 \end{minted}
 
-\subsubsection{Cấu hình Huấn luyện}\\
+\subsubsection{Cấu hình Huấn luyện}
+
 \textbf{Weighted Loss và Custom Trainer}
+
 Để sử dụng hàm mất mát \texttt{WeightedCELoss} trong framework Hugging Face Trainer, chúng em tạo lớp \texttt{WeightedTrainer} kế thừa từ \texttt{Trainer} và ghi đè phương thức \texttt{compute\_loss()}. Cơ chế này cho phép mô hình RoBERTa sử dụng trực tiếp trọng số lớp khi tính loss, từ đó học đồng đều trên cả lớp đa số và lớp thiểu số.
 
 \begin{minted}[frame=single, fontsize=\small, linenos, breaklines]{python}

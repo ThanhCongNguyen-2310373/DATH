@@ -30,3 +30,7 @@ Thumbs.db
 # Backup files
 *.bak
 *~
+
+_minted/
+latexminted_temp.cmd
+latexminted_wrapper.py

@@ -3,6 +3,10 @@
 % {
 \documentclass[a4paper]{report}
 \usepackage{minted}
+\setminted{
+    breaklines=true,
+    fontsize=\small
+}
 \usepackage{xurl}
 \usepackage{a4wide,amssymb,epsfig,latexsym,multicol,array,hhline,fancyhdr}
 \usepackage{vntex}
@@ -70,6 +74,7 @@
     \setlength{\labelwidth}{0pt}%          this is new
     }}{\endlist}
 
+\usemintedstyle{default} 
 
     
 \hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true} 
